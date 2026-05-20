@@ -1,0 +1,434 @@
+\documentclass[fontsize=11pt, parskip=half]{scrartcl}
+\usepackage[paperwidth=6.5in, paperheight=9.5in,
+            margin=1cm]{geometry}
+\pagestyle{plain}
+
+\usepackage{amsmath, amssymb, amsthm, amsfonts}
+
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+\usepackage{url}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{fact}[theorem]{Fact}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\crefname{section}{Problem}{Problems}
+\Crefname{section}{Problem}{Problems}
+\crefname{theorem}{Theorem}{Theorems}
+\Crefname{theorem}{Theorem}{Theorems}
+\crefname{definition}{Definition}{Definitions}
+\Crefname{definition}{Definition}{Definitions}
+\crefname{lemma}{Lemma}{Lemmas}
+\Crefname{lemma}{Lemma}{Lemmas}
+\crefname{fact}{Fact}{Facts}
+\Crefname{fact}{Fact}{Facts}
+
+\newif\ifsolutions
+\solutionstrue
+
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable}
+
+\ifsolutions
+  \newenvironment{solution}{%
+    \begin{tcolorbox}[colback=black!5!white, colframe=black!50!white,
+      title={\textbf{Solution}}, fonttitle=\normalfont, breakable]
+  }{\end{tcolorbox}}
+\else
+  \usepackage{verbatim}
+  \newenvironment{solution}{\expandafter\comment}{\expandafter\endcomment}
+\fi
+
+\tcolorboxenvironment{definition}{colback=blue!3!white, colframe=blue!40!white,
+  breakable, top=4pt, bottom=4pt}
+\tcolorboxenvironment{theorem}{colback=red!3!white, colframe=red!40!white,
+  breakable, top=4pt, bottom=4pt}
+\tcolorboxenvironment{lemma}{colback=purple!3!white, colframe=purple!40!white,
+  breakable, top=4pt, bottom=4pt}
+\tcolorboxenvironment{fact}{colback=orange!3!white, colframe=orange!40!white,
+  breakable, top=4pt, bottom=4pt}
+
+\newtcolorbox{defbox}[1][]{colback=blue!3!white, colframe=blue!40!white,
+  title={\textbf{#1}}, fonttitle=\normalfont, breakable, top=4pt, bottom=4pt}
+
+\newcommand{\mytitle}[1]{{\noindent\Large\textbf{#1}}}
+\renewcommand{\thesection}{\arabic{section}}
+\newcommand{\Msol}{\mathcal{M}_{sol}}
+
+%===================================
+\begin{document}
+
+\mytitle{Solomonoff Worksheet --- Extension Exercises \hfill \today}
+
+\medskip
+\noindent
+This is a self-contained companion to the main Solomonoff worksheet. It collects four
+additional exercises that build on (but do not require re-reading) the main sheet.
+\Cref{prob:dominance,prob:error_count,prob:mistakes} all sit downstream of the
+cumulative bound $S^\mu_\infty \leq -\ln w_\mu$; \cref{prob:misspec} drops the
+realizability assumption and quantifies what happens when $\mu \notin \Msol$.
+
+Difficulty ratings follow Knuth's scheme: \textbf{[05]} a few minutes,
+\textbf{[10]} 15-minute pencil-and-paper, \textbf{[15]} half an hour or so,
+\textbf{[20]} 1--2 hours.
+
+%===================================
+\section*{Recap of definitions and results}
+
+The main worksheet establishes the following. We restate them here so this document
+reads in isolation; consult the main sheet for proofs.
+
+\begin{defbox}[Notation]
+$\mathbb{B} = \{\texttt{0}, \texttt{1}\}$; $\mathbb{B}^*$ the set of finite binary
+strings; $\epsilon$ the empty string; $x_{1:n} := x_1 \cdots x_n$;
+$x_{<t} := x_1 \cdots x_{t-1}$.
+\end{defbox}
+
+\begin{definition}[Environment]\label{def:environment}
+An \textbf{environment} $\nu$ assigns to each history $x_{<t}$ a distribution
+$\nu(\cdot \mid x_{<t})$ over $\mathbb{B}$. The joint probability of a string is
+defined by the chain rule $\nu(x_{1:n}) := \prod_{t=1}^{n} \nu(x_t \mid x_{<t})$,
+$\nu(\epsilon) := 1$. The true (unknown) environment generating the data is
+denoted $\mu$.
+\end{definition}
+
+\begin{definition}[Model class, prior, Bayesian mixture]\label{def:mixture}
+Let $\Msol = \{\nu_1, \nu_2, \dots\}$ be a countable class of environments
+with prior weights $w_\nu > 0$, $\sum_\nu w_\nu = 1$. The \textbf{Bayesian mixture} is
+\[
+  \xi(x_{1:t}) ~:=~ \sum_{\nu \in \Msol} w_\nu \, \nu(x_{1:t}).
+\]
+\end{definition}
+
+\begin{defbox}[The Solomonoff prior]
+The canonical \textbf{Solomonoff} choice takes $\Msol$ to be the class of all
+computable environments and sets the \textbf{Solomonoff prior}
+$w_\nu := 2^{-K(\nu)}$, where $K(\nu)$ is the \emph{Kolmogorov complexity} of
+$\nu$ --- the length of the shortest program that computes $\nu$. The Bayesian
+mixture $\xi$ under this prior is the \emph{universal mixture}, written $\xi_U$.
+\end{defbox}
+
+\begin{definition}[Cumulative expected squared prediction error]\label{def:S_infty}
+For an environment $\mu$ and a predictor $P$,
+\[
+S^{\mu}_{\infty}(P) := \sum_{t=1}^{\infty}
+  \sum_{x_{<t} \in \mathbb{B}^*} \mu(x_{<t})
+  \sum_{x_t \in \mathbb{B}}
+  \big( P(x_t \mid x_{<t}) - \mu(x_t \mid x_{<t}) \big)^2.
+\]
+When $P = \xi$ (the Bayesian mixture) we simply write $S^{\mu}_{\infty}$.
+\end{definition}
+
+\begin{definition}[KL divergence]\label{def:kl}
+For probability distributions $P, Q$ on a finite set,
+$D_{\text{KL}}(P \,\|\, Q) := \sum_x P(x) \ln \tfrac{P(x)}{Q(x)}$, with
+$0 \ln \tfrac{0}{q} := 0$ and $p \ln \tfrac{p}{0} := \infty$ for $p > 0$.
+\end{definition}
+
+\begin{fact}[Cumulative prediction error bound]\label{fact:bound}
+If $\mu \in \Msol$, then $S^{\mu}_{\infty} \leq -\ln w_\mu$.
+\end{fact}
+
+\begin{fact}[Explicit complexity bound]\label{fact:explicit}
+Under the Solomonoff prior $w_\nu = 2^{-K(\nu)}$, if $\mu \in \Msol$ then
+$S^{\mu}_{\infty} \leq K(\mu) \ln 2$.
+\end{fact}
+
+\begin{fact}[Pinsker]\label{fact:pinsker}
+For probability distributions $P, Q$ on $\mathbb{B}$,
+$\sum_{x} (P(x) - Q(x))^2 \leq D_{\text{KL}}(P \,\|\, Q)$.
+\end{fact}
+
+%===================================
+\section{Universal dominance}\label{prob:dominance}
+
+The mixture $\xi$ never assigns much less probability than any single environment
+weighted by its prior. Under the Solomonoff prior this turns into a quantitative
+``every computable environment is within a factor $2^{-K(\nu)}$ of $\xi_U$''
+statement --- which is exactly the content of \cref{fact:bound,fact:explicit}
+viewed at a single time-step.
+
+\bigskip
+
+\noindent
+\textbf{[05]} Show that for every $\nu \in \Msol$ and every $x \in \mathbb{B}^*$,
+\[
+  \xi(x) ~\geq~ w_\nu \cdot \nu(x).
+\]
+Specialize to the Solomonoff prior to conclude
+\[
+  \xi_U(x) ~\geq~ 2^{-K(\nu)} \cdot \nu(x) \qquad \text{for every computable }\nu.
+\]
+
+\begin{solution}
+By \cref{def:mixture}, $\xi(x) = \sum_{\nu' \in \Msol} w_{\nu'} \,\nu'(x)$.
+Every term in this sum is non-negative, so dropping all terms except the one with
+$\nu' = \nu$ can only decrease the sum:
+\[
+  \xi(x) ~=~ \sum_{\nu' \in \Msol} w_{\nu'}\, \nu'(x)
+  ~\geq~ w_\nu\, \nu(x).
+\]
+Under the Solomonoff prior, $w_\nu = 2^{-K(\nu)}$, so
+$\xi_U(x) \geq 2^{-K(\nu)} \nu(x)$. \qedhere
+\end{solution}
+
+\begin{remark}
+This single inequality is the engine behind \cref{fact:bound}: dividing through
+gives $\mu(x)/\xi(x) \leq 1/w_\mu$, which is then fed into Pinsker and the chain
+rule in the proof of the main cumulative bound. The Solomonoff specialization
+$\xi_U \geq 2^{-K(\nu)} \nu$ is what makes $\xi_U$ \emph{universal}: a single
+predictor dominates the entire computable model class up to a factor that depends
+only on the model's description length.
+\end{remark}
+
+%===================================
+\section{From cumulative bound to a step-count}\label{prob:error_count}
+
+\Cref{fact:bound,fact:explicit} give an \emph{asymptotic} guarantee: the total
+expected squared prediction error is finite. We can turn this directly into a
+\emph{finite} statement: ``after at most this many steps, the mixture has
+predicted to within $\varepsilon$ on average.''
+
+\bigskip
+
+\noindent
+\textbf{[05]} Define the per-step expected squared error
+\[
+  d_t ~:=~ \sum_{x_{<t} \in \mathbb{B}^*} \mu(x_{<t})
+    \sum_{x_t \in \mathbb{B}} \big(\xi(x_t \mid x_{<t}) - \mu(x_t \mid x_{<t})\big)^2,
+  \qquad \text{so } S^\mu_\infty = \sum_{t=1}^\infty d_t.
+\]
+Show that for every $\varepsilon > 0$,
+\[
+  \#\big\{\, t \geq 1 \;:\; d_t > \varepsilon \,\big\}
+  ~<~ \frac{K(\mu) \ln 2}{\varepsilon}
+\]
+under the Solomonoff prior.
+
+\textit{Hint.} If $N$ such steps exist, what does that say about
+$N\varepsilon$ compared to $\sum_t d_t$?
+
+\begin{solution}
+Let $N := \#\{t : d_t > \varepsilon\}$. Each bad step contributes more than
+$\varepsilon$ to the cumulative sum, while all other steps contribute
+non-negatively, so
+\[
+  N \cdot \varepsilon ~<~ \sum_{t \, : \, d_t > \varepsilon} d_t
+  ~\leq~ \sum_{t=1}^\infty d_t ~=~ S^\mu_\infty ~\leq~ K(\mu) \ln 2,
+\]
+using \cref{fact:explicit} at the last step. Dividing by $\varepsilon$ gives
+$N < K(\mu) \ln 2 / \varepsilon$. \qedhere
+\end{solution}
+
+\begin{remark}
+Strictly fewer than $K(\mu) \ln 2 / \varepsilon$ steps can ever see per-step
+expected error above $\varepsilon$; every other step is at most $\varepsilon$-bad
+on average. The bound is independent of the time-step $t$ and of any structure of
+the sequence beyond the complexity of the true environment.
+\end{remark}
+
+%===================================
+\section{Bounded number of prediction mistakes}\label{prob:mistakes}
+
+So far we have bounded \emph{squared error}. For a deterministic computable
+environment --- i.e.\ a single computable infinite binary sequence $x_1^*, x_2^*,
+\dots$ --- one can ask the sharper $0/1$-loss question: how often does the
+mixture predict the \emph{wrong bit}? The cumulative bound is strong enough to
+give an answer.
+
+Let $\mu$ be a deterministic environment, so $\mu(x_t \mid x_{<t}) \in \{0,1\}$
+on every history; write $x_t^*$ for the unique bit on which $\mu(\cdot \mid x_{<t})$
+puts all its mass. Define the \textbf{threshold predictor} associated with $\xi$:
+at each step, predict the more-likely bit,
+\[
+  \hat{x}_t ~:=~ \arg\max_{b \in \mathbb{B}} \xi(b \mid x_{<t})
+  \qquad \text{(break ties arbitrarily).}
+\]
+We say the mixture makes a \textbf{mistake} at time $t$ if $\hat{x}_t \neq x_t^*$.
+
+\bigskip
+
+\noindent
+\textbf{[15]} Show that under the Solomonoff prior, the number of mistakes
+made by the threshold predictor on the $\mu$-trajectory is at most
+\[
+  \#\{\, t \geq 1 \;:\; \hat{x}_t \neq x_t^* \,\}
+  ~\leq~ 2 K(\mu) \ln 2.
+\]
+
+\textit{Hint.} At a mistake step, $\xi(x_t^* \mid x_{<t}) \leq \tfrac12$ (why?).
+The per-step squared error along the deterministic $\mu$-trajectory
+simplifies dramatically; bound it from below, then sum.
+
+\begin{solution}
+\textbf{Step 1: per-step squared error along the $\mu$-trajectory.}
+Because $\mu$ is deterministic, the outer sum over $x_{<t}$ in $d_t$ collapses
+onto the unique trajectory $x_{<t}^* := x_1^* \cdots x_{t-1}^*$, with weight
+$\mu(x_{<t}^*) = 1$. Write $p_t := \xi(x_t^* \mid x_{<t}^*) \in [0,1]$ for the
+mass the mixture places on the \emph{correct} bit. Since $\mu$ assigns mass $1$
+to $x_t^*$ and $0$ to the other bit,
+\[
+  d_t ~=~ \sum_{x_t \in \mathbb{B}} \big(\xi(x_t \mid x_{<t}^*) - \mu(x_t \mid x_{<t}^*)\big)^2
+  ~=~ (p_t - 1)^2 + (1 - p_t - 0)^2 ~=~ 2(1 - p_t)^2.
+\]
+
+\textbf{Step 2: a mistake step contributes at least $\tfrac12$.}
+A mistake at time $t$ means $\hat{x}_t \neq x_t^*$, i.e.\ the threshold predictor
+chose the \emph{other} bit. This requires
+$\xi(\hat{x}_t \mid x_{<t}^*) \geq \xi(x_t^* \mid x_{<t}^*)$, i.e.\
+$1 - p_t \geq p_t$, i.e.\ $p_t \leq \tfrac12$. So at every mistake step,
+\[
+  d_t ~=~ 2(1 - p_t)^2 ~\geq~ 2 \cdot \tfrac{1}{4} ~=~ \tfrac12.
+\]
+
+\textbf{Step 3: sum and apply the explicit bound.}
+Let $N$ be the total number of mistakes. Summing $d_t$ over mistake steps
+(non-negative contributions from non-mistake steps only help):
+\[
+  \tfrac12 \cdot N
+  ~\leq~ \sum_{t \,:\, \hat{x}_t \neq x_t^*} d_t
+  ~\leq~ \sum_{t=1}^\infty d_t ~=~ S^\mu_\infty
+  ~\leq~ K(\mu) \ln 2,
+\]
+where the last step is \cref{fact:explicit}. Rearranging, $N \leq 2 K(\mu) \ln 2$.
+\qedhere
+\end{solution}
+
+\begin{remark}
+This is the headline consequence of the Solomonoff bound: on \emph{any}
+computable infinite binary sequence, the universal mixture's threshold
+predictor makes only finitely many mistakes --- a bounded number proportional
+to the description length of the sequence. With $\ln 2 \approx 0.693$ the
+constant is just under $1.4$, so an environment that takes $k$ bits to describe
+costs at most about $1.4 k$ mistakes \emph{ever}.
+
+The bound is purely existence-style: it does not say \emph{when} the mistakes
+happen. They could all occur at the start, or be spread out unpredictably ---
+the bound only guarantees a finite total.
+\end{remark}
+
+%===================================
+\section{Misspecified models: when $\mu \notin \Msol$}\label{prob:misspec}
+
+The cumulative bound \cref{fact:bound} assumed the true environment $\mu$ lives
+in the model class $\Msol$. What happens when it does not? We now show the
+bound \emph{degrades gracefully}: it splits cleanly into a complexity term
+(``cost of not knowing which model is best''), exactly as before, plus a
+linear-in-time approximation term (``cost of no model being right'').
+
+Throughout this section, $\mu$ is an arbitrary environment, possibly outside
+$\Msol$. We will state the bound in terms of an arbitrary
+$\hat\mu \in \Msol$ --- think of $\hat\mu$ as ``any in-class model you would
+like to compare $\xi$ against.'' The bound holds simultaneously for every
+choice of $\hat\mu \in \Msol$, so taking the infimum over $\hat\mu$ on the
+right-hand side gives the tightest version.
+
+\bigskip
+
+\noindent
+\textbf{[10]} Show that for every $T \geq 1$,
+\begin{align*}
+  &\sum_{t=1}^{T} \mathbb{E}_{X_{<t} \sim \mu}\!\Big[
+    D_{\text{KL}}\!\big(\mu(\cdot \mid X_{<t}) \,\|\, \xi(\cdot \mid X_{<t})\big)
+  \Big] \\
+  &\leq~
+  -\ln w_{\hat\mu}
+  ~+~
+  \sum_{t=1}^{T} \mathbb{E}_{X_{<t} \sim \mu}\!\Big[
+    D_{\text{KL}}\!\big(\mu(\cdot \mid X_{<t}) \,\|\, \hat\mu(\cdot \mid X_{<t})\big)
+  \Big].
+\end{align*}
+
+\textit{Hint.} Mimic the proof of \cref{fact:bound}, but bound $\xi$ from below
+by $w_{\hat\mu} \,\hat\mu$ rather than $w_\mu \, \mu$. The telescoping/chain-rule
+step is identical.
+
+\begin{solution}
+Mixture dominance applied to $\hat\mu \in \Msol$ (\cref{prob:dominance}) gives
+$\xi(x_{1:T}) \geq w_{\hat\mu}\, \hat\mu(x_{1:T})$ for every $x_{1:T}$. Hence
+$\mu(x_{1:T})/\xi(x_{1:T}) \leq \mu(x_{1:T}) / (w_{\hat\mu}\, \hat\mu(x_{1:T}))$,
+and taking logs,
+\[
+  \ln \frac{\mu(x_{1:T})}{\xi(x_{1:T})}
+  ~\leq~ -\ln w_{\hat\mu} \;+\; \ln \frac{\mu(x_{1:T})}{\hat\mu(x_{1:T})}.
+\]
+Now take expectations under $\mu$. The left-hand side is
+$D_{\text{KL}}\big(\mu(X_{1:T}) \,\|\, \xi(X_{1:T})\big)$; the second term on
+the right is $D_{\text{KL}}\big(\mu(X_{1:T}) \,\|\, \hat\mu(X_{1:T})\big)$;
+the constant survives because $\mu(X_{1:T})$ has total mass $1$. So
+\[
+  D_{\text{KL}}\!\big(\mu(X_{1:T}) \,\|\, \xi(X_{1:T})\big)
+  ~\leq~
+  -\ln w_{\hat\mu}
+  ~+~
+  D_{\text{KL}}\!\big(\mu(X_{1:T}) \,\|\, \hat\mu(X_{1:T})\big).
+\]
+Apply the telescoped chain rule for KL divergence (used in the proof of
+\cref{fact:bound}) to both joint KLs:
+\[
+  D_{\text{KL}}\!\big(\mu(X_{1:T}) \,\|\, \nu(X_{1:T})\big)
+  ~=~ \sum_{t=1}^{T} \mathbb{E}_{X_{<t} \sim \mu}\!\Big[
+    D_{\text{KL}}\!\big(\mu(\cdot \mid X_{<t}) \,\|\, \nu(\cdot \mid X_{<t})\big)
+  \Big],
+\]
+for both $\nu = \xi$ and $\nu = \hat\mu$. Substituting gives the claimed
+inequality. \qedhere
+\end{solution}
+
+\begin{remark}[Reading the two terms]
+The right-hand side splits into two qualitatively different terms:
+\begin{itemize}\itemsep=2pt
+\item $-\ln w_{\hat\mu}$ is \emph{constant in $T$} --- under the Solomonoff
+prior, this is $K(\hat\mu)\ln 2$. The familiar ``complexity'' cost of search.
+\item The approximation term is a sum of $T$ per-step KLs; in general it
+grows with $T$. It vanishes identically iff $\hat\mu$ matches $\mu$ on every
+$\mu$-reachable history --- in particular when $\mu \in \Msol$ and we pick
+$\hat\mu = \mu$, recovering \cref{fact:bound}.
+\end{itemize}
+Combining with Pinsker (\cref{fact:pinsker}) gives the corresponding bound on
+$S^\mu_\infty$, which is infinite in general but inherits the rate of $\hat\mu$.
+\end{remark}
+
+\begin{remark}[What does ``best in class'' mean?]
+The bound is valid for every $\hat\mu \in \Msol$. A tempting question: which
+$\hat\mu$ gives the tightest bound? The answer is genuinely setting-dependent.
+
+\textit{Finite horizon $T$.} The minimizer of the RHS is
+\[
+  \hat\mu_T ~:=~ \arg\min_{\nu \in \Msol}\!
+    \Big\{ -\ln w_\nu + \textstyle\sum_{t=1}^{T} \mathbb{E}_{X_{<t} \sim \mu}\!
+    \big[ D_{\text{KL}}(\mu(\cdot \mid X_{<t}) \,\|\, \nu(\cdot \mid X_{<t})) \big] \Big\}.
+\]
+This is well-defined (finitely many terms, attained when $\Msol$ is finite),
+but the answer depends on $T$ --- for small $T$ the prior term dominates and a
+high-prior coarse model wins; for large $T$ the fit term dominates and the best
+per-step approximator wins. Both regimes are correct.
+
+\textit{Asymptotic rate.} A horizon-free analogue minimizes the per-step KL
+rate $\lim_{T \to \infty} \tfrac{1}{T} \sum_{t \leq T}
+\mathbb{E}_\mu[D_{\text{KL}}(\mu_t \,\|\, \nu_t)]$. This is the right notion
+when one cares about the linear-growth slope of the bound. But it has two
+drawbacks: the limit need not exist for non-stationary $\mu$ (one can
+substitute $\liminf$ but at the cost of clarity), and it discards the prior
+$w_\nu$ entirely, so the minimizer is not the same as $\hat\mu_T$ at any finite
+$T$ --- only of its slope.
+
+\textit{Stationary $\mu$.} The per-step expected KLs are constant in $t$, so
+all three notions essentially agree: $\hat\mu = \arg\min_{\nu \in \Msol}
+D_{\text{KL}}(\mu \,\|\, \nu)$, where the KL is taken under the (common)
+one-step conditional law. This is the case where ``$\hat\mu$ = projection of
+$\mu$ onto $\Msol$ in KL'' has unambiguous meaning.
+
+\textit{Upshot.} The bound holds for all $\hat\mu \in \Msol$, and one is free
+to take the infimum on the RHS over $\hat\mu$. Which $\hat\mu$ actually
+attains that infimum is a separate question whose answer depends on horizon,
+prior, and any structural assumptions on $\mu$.
+\end{remark}
+
+\end{document}
