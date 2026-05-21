@@ -27,7 +27,7 @@
 
 % Solution toggle
 \newif\ifsolutions
-\solutionsfalse  % change to \solutionsfalse to hide solutions
+\solutionstrue  % change to \solutionsfalse to hide solutions
 
 \usepackage{tcolorbox}
 \tcbuselibrary{breakable}
@@ -1172,7 +1172,7 @@ Non-negativity plus the (super)martingale structure forces $X_{\nu,t}$ to conver
 If $(X_t)_{t \geq 0}$ is a non-negative $\mu^\pi$-supermartingale, then there exists a function $X_\infty : \cH^\infty \to \mathbb{R}_{\geq 0}$ of the infinite history such that $X_t(\aes_{1:t}) \to X_\infty(\aes_{1:\infty})$ as $t \to \infty$, with $X_\infty(\aes_{1:\infty}) < \infty$, for $\mu^\pi$-almost every infinite history $\aes_{1:\infty}$.
 That is:
 \[
-    \mu^\pi\!\Big(\Big\{\aes_{1:\infty} \in (\cA \times \cE)^\infty : X_t(\aes_{1:t}) \not\to X_\infty(\aes_{1:\infty}) \text{ or } X_\infty(\aes_{1:\infty}) = \infty\Big\}\Big) ~=~ 0.
+    \mu^\pi\!\Big(\Big\{\aes_{1:\infty} \in (\cA \times \cE)^\infty : X_t(\aes_{1:t}) \not\to X_\infty(\aes_{1:\infty})) = \infty\Big\}\Big) ~=~ 0.
 \]
 \end{fact}
 
