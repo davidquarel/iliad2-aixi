@@ -1,0 +1,20 @@
+# Trimmed config for the ILIAD course notebook generator (ported from ARENA).
+# Only the two days we ship are listed. main.py reads:
+#   conversion_map[id] -> (streamlit_page, exercise_dir)
+#   chapter_names[chapter_num], chapter_names_long[chapter_num]
+# Generated artifacts land under <repo>/build/exercises/<exercise_dir>/ ; CI bundles
+# them with their support modules and force-pushes to the `notebooks` branch for Colab.
+
+conversion_map:
+  "2.6":
+    streamlit_page: "06_[2.6]_Specification_Gaming_and_Goal_Misgeneralisation"
+    exercise_dir: "part6_goalmisgen"
+  "2.2":
+    streamlit_page: "02_[2.2]_Vanilla_Policy_Gradient"
+    exercise_dir: "part_vpg"
+
+chapter_names:
+  2: "build"
+
+chapter_names_long:
+  2: "ILIAD Intensive - RL notebooks"

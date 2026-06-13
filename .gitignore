@@ -1,0 +1,26 @@
+# LaTeX build artifacts (PDFs live only in Pages storage / are rebuilt by CI)
+*.pdf
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.bbl
+*.blg
+*.fls
+*.fdb_latexmk
+*-present.tex
+*-handout.tex
+*-sol.tex
+*-nosol.tex
+texput.log
+
+# Notebook generation artifacts (only master_*.py are committed; .ipynb are
+# generated downstream and force-pushed to the `notebooks` branch by CI)
+build/
+nb_publish/
+gen/masters/*.ipynb
+__pycache__/
+*.pyc
