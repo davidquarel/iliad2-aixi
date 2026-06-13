@@ -676,7 +676,8 @@ class VPGAgent:
         logits = self.policy_network(obs)
         log_probs = F.log_softmax(logits, dim=-1)
         actions = t.multinomial(log_probs.exp(), num_samples=1).squeeze(-1)
-        logprobs = log_probs.gather(-1, actions.unsqueeze(-1)).squeeze(-1)
+        # log pi(a | s) for the sampled action, per env, by advanced indexing (no gather):
+        logprobs = log_probs[t.arange(actions.shape[0], device=log_probs.device), actions]
         return actions, logprobs, None
         # END SOLUTION
 
@@ -784,7 +785,12 @@ def compute_logprobs_and_entropy(
     # SOLUTION
     logits = pi(tau.obs)
     log_probs = F.log_softmax(logits, dim=-1)
-    log_probs_taken = log_probs.gather(-1, tau.actions.unsqueeze(-1)).squeeze(-1)
+    # pick out log pi(a_t | s_t) per (env, step) by advanced indexing: index dims 0,1 with
+    # broadcast aranges and dim 2 (actions) with the taken action -> shape (num_envs, num_steps).
+    num_envs, num_steps = tau.actions.shape
+    envs = t.arange(num_envs, device=log_probs.device)[:, None]
+    steps = t.arange(num_steps, device=log_probs.device)[None, :]
+    log_probs_taken = log_probs[envs, steps, tau.actions]
     probs = log_probs.exp()
     entropy = -(probs * log_probs).sum(dim=-1)
     return log_probs_taken, entropy
