@@ -1,0 +1,202 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Pages deploy needs `pages: write` + `id-token: write`; `contents: read`
+# is enough for everything else.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Pages allows at most one concurrent deploy. `cancel-in-progress: false`
+# lets an in-flight deploy finish rather than getting yanked by the next push.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Worksheets: each source is built twice — solutions shown (sol) and hidden
+  # (nosol). The `\newif\ifsolutions` toggle is set explicitly in the file, so
+  # we rewrite that line with sed before building (same trick as ./build.sh).
+  # To add a worksheet: add its basename (no .tex) to the matrix `file` list
+  # AND give it a title in the deploy job's title map below.
+  # ---------------------------------------------------------------------------
+  worksheets:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        file: [solomonoff-all, aixi-worksheet]
+        mode: [sol, nosol]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set solutions toggle (${{ matrix.mode }})
+        run: |
+          set -euo pipefail
+          src="${{ matrix.file }}.tex"
+          tmp="${{ matrix.file }}-${{ matrix.mode }}.tex"
+          if [ "${{ matrix.mode }}" = "sol" ]; then
+            sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionstrue/' "$src" > "$tmp"
+          else
+            sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionsfalse/' "$src" > "$tmp"
+          fi
+
+      - name: Build PDF
+        uses: xu-cheng/latex-action@v3
+        with:
+          # latexmk auto-runs bibtex for the \bibliography{biblo} line.
+          root_file: ${{ matrix.file }}-${{ matrix.mode }}.tex
+          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: worksheet-${{ matrix.file }}-${{ matrix.mode }}
+          path: ${{ matrix.file }}-${{ matrix.mode }}.pdf
+
+  # ---------------------------------------------------------------------------
+  # Slides: a single Beamer build per deck. To add a deck: add its basename to
+  # the matrix and give it a title in the deploy job's title map below.
+  # ---------------------------------------------------------------------------
+  slides:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        file: [iliad-david1-slides]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build slides PDF
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: ${{ matrix.file }}.tex
+          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: slides-${{ matrix.file }}
+          path: ${{ matrix.file }}.pdf
+
+  # ---------------------------------------------------------------------------
+  # Deploy: gather every built PDF, build a one-page index, publish to Pages.
+  # Only runs on push to main; PRs build (above) but don't deploy.
+  # ---------------------------------------------------------------------------
+  deploy:
+    needs: [worksheets, slides]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all PDFs
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Flatten PDFs into public/
+        run: |
+          mkdir -p public
+          find artifacts/ -name '*.pdf' -exec cp {} public/ \;
+          touch public/.nojekyll
+          ls -la public/
+
+      - name: Generate public/index.html
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA_SHORT=$(echo "${{ github.sha }}" | cut -c1-7)
+          REPO="${{ github.repository }}"
+          BUILT=$(date -u '+%Y-%m-%d %H:%M UTC')
+
+          # Display title for each base name. Add a row when you add a file
+          # to a build matrix above.
+          title_of() {
+            case "$1" in
+              solomonoff-all)      echo "Solomonoff Induction Exercises" ;;
+              aixi-worksheet)      echo "AIXI Exercises" ;;
+              iliad-david1-slides) echo "Universal AI: Solomonoff Induction &amp; AIXI" ;;
+              *)                   echo "$1" ;;
+            esac
+          }
+
+          {
+            cat <<'HEAD'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Iliad Intensive — Solomonoff &amp; AIXI</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+                   max-width: 760px; margin: 2.5rem auto; padding: 0 1.2rem;
+                   color: #222; line-height: 1.55; }
+            h1 { font-size: 1.6rem; border-bottom: 1px solid #eaecef; padding-bottom: .3rem; }
+            .lede { color: #57606a; margin-top: .2rem; }
+            h2 { font-size: 1.15rem; margin-top: 2rem; color: #24292e; }
+            ul { list-style: none; padding-left: 0; }
+            li { padding: .35rem 0; }
+            a { color: #0366d6; text-decoration: none; }
+            a:hover { text-decoration: underline; }
+            .sep { color: #d1d5da; margin: 0 .4rem; }
+            .meta { color: #6a737d; font-size: .88rem; margin-top: 2.5rem;
+                    border-top: 1px solid #eaecef; padding-top: .8rem; }
+            code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                   background: #f6f8fa; padding: .1rem .3rem; border-radius: 3px; font-size: .9em; }
+          </style>
+          </head>
+          <body>
+          <h1>Iliad Intensive — Solomonoff &amp; AIXI</h1>
+          <p class="lede">London Initiative for Safe AI · worksheets &amp; slides, rebuilt on every push.</p>
+          HEAD
+
+            # --- Worksheets: one row per base, with sol + nosol links ---
+            echo "<h2>Worksheets</h2>"
+            echo "<ul>"
+            for pdf in public/*-nosol.pdf; do
+              [ -e "$pdf" ] || continue
+              base=$(basename "$pdf" -nosol.pdf)
+              echo "<li>$(title_of "$base")"
+              [ -e "public/${base}-nosol.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./${base}-nosol.pdf\">📄 Worksheet</a>"
+              [ -e "public/${base}-sol.pdf" ]   && echo "<span class=\"sep\">·</span><a href=\"./${base}-sol.pdf\">✅ With solutions</a>"
+              echo "</li>"
+            done
+            echo "</ul>"
+
+            # --- Slides: every *-slides.pdf that isn't a worksheet variant ---
+            echo "<h2>Slides</h2>"
+            echo "<ul>"
+            for pdf in public/*-slides.pdf; do
+              [ -e "$pdf" ] || continue
+              base=$(basename "$pdf" .pdf)
+              echo "<li>$(title_of "$base")<span class=\"sep\">·</span><a href=\"./${base}.pdf\">🎬 Slides</a></li>"
+            done
+            echo "</ul>"
+
+            echo "<p class=\"meta\">Built ${BUILT} from commit <code>${SHA_SHORT}</code> · source: <a href=\"https://github.com/${REPO}\">github.com/${REPO}</a></p>"
+            echo "</body></html>"
+          } > public/index.html
+
+          echo "----- public/index.html -----"
+          cat public/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
