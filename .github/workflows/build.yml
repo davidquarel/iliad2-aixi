@@ -48,12 +48,19 @@ jobs:
             sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionsfalse/' "$src" > "$tmp"
           fi
 
-      - name: Build PDF
+      - name: Build PDF (pdflatex -> bibtex -> pdflatex x2)
         uses: xu-cheng/latex-action@v3
         with:
-          # latexmk auto-runs bibtex for the \bibliography{biblo} line.
+          # latexmk's auto-bibtex was leaving \cite references unresolved, so we
+          # drive the passes explicitly: the main compile below is pdflatex pass 1,
+          # then post_compile runs bibtex and two more pdflatex passes.
           root_file: ${{ matrix.file }}-${{ matrix.mode }}.tex
-          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
+          compiler: pdflatex
+          args: -interaction=nonstopmode -halt-on-error -file-line-error
+          post_compile: |
+            bibtex ${{ matrix.file }}-${{ matrix.mode }}
+            pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
+            pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
@@ -62,8 +69,12 @@ jobs:
           path: ${{ matrix.file }}-${{ matrix.mode }}.pdf
 
   # ---------------------------------------------------------------------------
-  # Slides: a single Beamer build per deck. To add a deck: add its basename to
-  # the matrix and give it a title in the deploy job's title map below.
+  # Slides: each deck is built twice — presentation (\pause reveals ON) and
+  # handout (reveals collapsed). A one-line wrapper .tex selects the mode by
+  # \def-ing \HANDOUT before \input-ing the deck (the deck's preamble adds the
+  # beamer `handout` option iff \HANDOUT is defined). Builds run the explicit
+  # pdflatex -> bibtex -> pdflatex x2 sequence so the References frame resolves.
+  # To add a deck: add its basename to the matrix AND give it a title below.
   # ---------------------------------------------------------------------------
   slides:
     runs-on: ubuntu-latest
@@ -71,20 +82,36 @@ jobs:
       fail-fast: false
       matrix:
         file: [iliad-david1-slides]
+        mode: [present, handout]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build slides PDF
+      - name: Write wrapper selecting pause mode (${{ matrix.mode }})
+        run: |
+          set -euo pipefail
+          wrap="${{ matrix.file }}-${{ matrix.mode }}.tex"
+          if [ "${{ matrix.mode }}" = "handout" ]; then
+            printf '\\def\\HANDOUT{}\\input{%s}\n' "${{ matrix.file }}" > "$wrap"
+          else
+            printf '\\input{%s}\n' "${{ matrix.file }}" > "$wrap"
+          fi
+
+      - name: Build PDF (pdflatex -> bibtex -> pdflatex x2)
         uses: xu-cheng/latex-action@v3
         with:
-          root_file: ${{ matrix.file }}.tex
-          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
+          root_file: ${{ matrix.file }}-${{ matrix.mode }}.tex
+          compiler: pdflatex
+          args: -interaction=nonstopmode -halt-on-error -file-line-error
+          post_compile: |
+            bibtex ${{ matrix.file }}-${{ matrix.mode }}
+            pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
+            pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
 
       - name: Upload PDF artifact
         uses: actions/upload-artifact@v4
         with:
-          name: slides-${{ matrix.file }}
-          path: ${{ matrix.file }}.pdf
+          name: slides-${{ matrix.file }}-${{ matrix.mode }}
+          path: ${{ matrix.file }}-${{ matrix.mode }}.pdf
 
   # ---------------------------------------------------------------------------
   # Deploy: gather every built PDF, build a one-page index, publish to Pages.
@@ -175,13 +202,16 @@ jobs:
             done
             echo "</ul>"
 
-            # --- Slides: every *-slides.pdf that isn't a worksheet variant ---
+            # --- Slides: one row per base, with present (pauses) + handout ---
             echo "<h2>Slides</h2>"
             echo "<ul>"
-            for pdf in public/*-slides.pdf; do
+            for pdf in public/*-present.pdf; do
               [ -e "$pdf" ] || continue
-              base=$(basename "$pdf" .pdf)
-              echo "<li>$(title_of "$base")<span class=\"sep\">·</span><a href=\"./${base}.pdf\">🎬 Slides</a></li>"
+              base=$(basename "$pdf" -present.pdf)
+              echo "<li>$(title_of "$base")"
+              [ -e "public/${base}-present.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./${base}-present.pdf\">🎬 Slides (with pauses)</a>"
+              [ -e "public/${base}-handout.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./${base}-handout.pdf\">📄 Handout (no pauses)</a>"
+              echo "</li>"
             done
             echo "</ul>"
 
