@@ -242,12 +242,11 @@ jobs:
           <p class="lede">London Initiative for Safe AI · worksheets &amp; slides, rebuilt on every push.</p>
           HEAD
 
-            # --- Worksheets: one row per base, with sol + nosol links ---
+            # --- Worksheets: explicit order (Solomonoff first, then AIXI) ---
             echo "<h2>Worksheets</h2>"
             echo "<ul>"
-            for pdf in public/*-nosol.pdf; do
-              [ -e "$pdf" ] || continue
-              base=$(basename "$pdf" -nosol.pdf)
+            for base in solomonoff-all aixi-worksheet; do
+              [ -e "public/${base}-nosol.pdf" ] || continue
               echo "<li>$(title_of "$base")"
               [ -e "public/${base}-nosol.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./${base}-nosol.pdf\">📄 Worksheet</a>"
               [ -e "public/${base}-sol.pdf" ]   && echo "<span class=\"sep\">·</span><a href=\"./${base}-sol.pdf\">✅ With solutions</a>"
@@ -272,8 +271,8 @@ jobs:
             echo "<h2>Interactive Exercises (Colab)</h2>"
             echo "<ul>"
             COLAB="https://colab.research.google.com/github/${REPO}/blob/notebooks"
-            echo "<li>Goal Misgeneralisation &amp; Specification Gaming<span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_solutions.ipynb\">✅ Solutions</a></li>"
             echo "<li>Vanilla Policy Gradient (CartPole)<span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_solutions.ipynb\">✅ Solutions</a></li>"
+            echo "<li>Goal Misgeneralisation &amp; Specification Gaming<span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_solutions.ipynb\">✅ Solutions</a></li>"
             echo "</ul>"
 
             echo "<p class=\"meta\">Built ${BUILT} from commit <code>${SHA_SHORT}</code> · source: <a href=\"https://github.com/${REPO}\">github.com/${REPO}</a></p>"
