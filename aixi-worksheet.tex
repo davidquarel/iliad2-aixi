@@ -93,7 +93,7 @@ Much of this material is drawn from \href{https://www.hutter1.net/publ/uaibook2.
 
 \medskip
 \noindent
-\textbf{Difficulty ratings.} Each subproblem is tagged with a rating in square brackets using Knuth's scale \cite{Knuth:73a}: roughly, \textbf{[00]}~trivial, \textbf{[10]}~15--minute pencil-and-paper, \textbf{[20]}~1--2~hours, \textbf{[30]}~several hours to a day, \textbf{[40]}~a significant research result. Intermediate values are possible. See \cref{sec:appendix_difficulty} for the full scale. Problems marked \textbf{($\ast$)} are enrichment --- off the critical path to the main goals and safely skippable on a first pass.
+\textbf{Difficulty ratings.} Each subproblem is tagged with a rating in square brackets using Knuth's scale \cite{Knuth:73a}: roughly, \textbf{[00]}~trivial, \textbf{[10]}~15--minute pencil-and-paper, \textbf{[20]}~1--2~hours, \textbf{[30]}~several hours to a day, \textbf{[40]}~a significant research result. Intermediate values are possible. See \cref{sec:appendix_difficulty} for the full scale. Problems marked \textbf{($\ast$)} are enrichment: off the critical path to the main goals and safely skippable on a first pass.
 
 %===================================
 \section*{Goal and Roadmap}
@@ -178,21 +178,21 @@ An \textbf{agent} interacts with an \textbf{environment} in discrete time steps 
 
 \begin{definition}[Spaces and notation]\label{def:spaces}\
 \begin{itemize}\itemsep=2pt
-    \item $\cA$ --- finite set of \textbf{actions}
-    \item $\cO$ --- finite set of \textbf{observations}
-    \item $\cR \subset [0,1]$ --- finite set of \textbf{rewards}
-    \item $\cE := \cO \times \cR$ --- set of \textbf{percepts}; $e_t = (o_t, r_t) \equiv o_tr_t$
-    \item $\cH^t := (\cA \times \cE)^t$ --- set of all histories of length $t$
-    \item $\cH^* := \cup_{t=0}^\infty \cH^t$ --- set of all finite \textbf{histories}
-    \item $\cH^\infty := (\cA \times \cE)^\infty$ --- set of all infinite histories
-    \item $\Delta S$ --- set of all probability distributions over set $S$
-    \item $\llbracket \cdot \rrbracket$ --- \textbf{Iverson bracket}: $\llbracket P \rrbracket = 1$ if $P$ is true, $0$ if false
-    \item $t$ --- current time step; $m$ --- finite horizon; $1 \leq t \leq m$
-    \item $i, j, k$ --- arbitrary integer indices
-    \item $xy$ --- concatenation
-    \item $\epsilon$ --- the empty string/history 
-    \item $\aes_{i:j} := a_i e_i\, a_{i+1} e_{i+1} \,\cdots\, a_j e_j$ --- history segment from time $i$ to $j$
-    \item $\aes_{<t} := a_1 e_1\, a_2 e_2 \,\cdots\, a_{t-1} e_{t-1}$ --- history up to (but not including) time $t$
+    \item $\cA$: finite set of \textbf{actions}
+    \item $\cO$: finite set of \textbf{observations}
+    \item $\cR \subset [0,1]$: finite set of \textbf{rewards}
+    \item $\cE := \cO \times \cR$: set of \textbf{percepts}; $e_t = (o_t, r_t) \equiv o_tr_t$
+    \item $\cH^t := (\cA \times \cE)^t$: set of all histories of length $t$
+    \item $\cH^* := \cup_{t=0}^\infty \cH^t$: set of all finite \textbf{histories}
+    \item $\cH^\infty := (\cA \times \cE)^\infty$: set of all infinite histories
+    \item $\Delta S$: set of all probability distributions over set $S$
+    \item $\llbracket \cdot \rrbracket$: \textbf{Iverson bracket}: $\llbracket P \rrbracket = 1$ if $P$ is true, $0$ if false
+    \item $t$: current time step; $m$: finite horizon; $1 \leq t \leq m$
+    \item $i, j, k$: arbitrary integer indices
+    \item $xy$: concatenation
+    \item $\epsilon$: the empty string/history 
+    \item $\aes_{i:j} := a_i e_i\, a_{i+1} e_{i+1} \,\cdots\, a_j e_j$: history segment from time $i$ to $j$
+    \item $\aes_{<t} := a_1 e_1\, a_2 e_2 \,\cdots\, a_{t-1} e_{t-1}$: history up to (but not including) time $t$
 \end{itemize}
 \end{definition}
 
@@ -276,7 +276,7 @@ Show that, provided $\aes_{i:j}$ is consistent with $\pi$ (i.e.\ $a_k = a^*_k$ f
 \[
     \nu^\pi(\aes_{i:j} \mid \aes_{<i}) ~=~ \nu(\aes_{i:j} \mid \aes_{<i}),
 \]
-i.e.\ on $\pi$-consistent futures the interaction measure reduces to the environment measure --- every policy factor is $1$.
+i.e.\ on $\pi$-consistent futures the interaction measure reduces to the environment measure: every policy factor is $1$.
 
 \begin{solution}
 Since $\pi$ is deterministic, $\pi(a_k \mid \aes_{<k}) = \llbracket a_k = a^*_k \rrbracket$.
@@ -291,7 +291,7 @@ From \cref{def:interaction}:
 where the last equality is the natural segment extension of $\nu(\aes_{1:t}) := \prod_{k=1}^t \nu(e_k \mid \aes_{<k} a_k)$.
 \end{solution}
 
-\mysubsection{5}{[10] (General chain rule for $\nu^\pi$)\label{prob:chain_rule_nupi}
+\mysubsection{5}{[05] (General chain rule for $\nu^\pi$)\label{prob:chain_rule_nupi}
 Show that for any $p \leq q \leq r$:}
 \[
     \nu^\pi(\aes_{p:r} \mid \aes_{<p}) ~=~ \nu^\pi(\aes_{p:q} \mid \aes_{<p}) \cdot \nu^\pi(\aes_{q+1:r} \mid \aes_{<p}\, \aes_{p:q}).
@@ -300,14 +300,14 @@ Show that for any $p \leq q \leq r$:}
 \begin{solution}
 Split the defining product $\nu^\pi(\aes_{p:r} \mid \aes_{<p}) = \prod_{k=p}^r \pi(a_k \mid \aes_{<k})\, \nu(e_k \mid \aes_{<k} a_k)$ at index $q$:
 \begin{align*}
-    &\nu^\pi(\aes_{p:r} \mid \aes_{<p})\\
+    \nu^\pi(\aes_{p:r} \mid \aes_{<p})
+    ~&=~ \prod_{k=p}^r \pi(a_k \mid \aes_{<k})\, \nu(e_k \mid \aes_{<k} a_k)\\
     ~&=~ \underbrace{\prod_{k=p}^{q} \pi(a_k \mid \aes_{<k})\, \nu(e_k \mid \aes_{<k} a_k)}_{\nu^\pi(\aes_{p:q} \mid \aes_{<p})}
-    \;\cdot\; \underbrace{\prod_{k=q+1}^{r} \pi(a_k \mid \aes_{<k})\, \nu(e_k \mid \aes_{<k} a_k)}_{\nu^\pi(\aes_{q+1:r} \mid \aes_{<p}\, \aes_{p:q})}.
+    \;\cdot\; \underbrace{\prod_{k=q+1}^{r} \pi(a_k \mid \aes_{<k})\, \nu(e_k \mid \aes_{<k} a_k)}_{\nu^\pi(\aes_{q+1:r} \mid \aes_{<p}\, \aes_{p:q})},
 \end{align*}
-The first factor is $\nu^\pi(\aes_{p:q} \mid \aes_{<p})$ by definition.
-The second is $\nu^\pi(\aes_{q+1:r} \mid \aes_{<p}\, \aes_{p:q})$: the past for step $q+1$ onwards is the given history $\aes_{<p}$ extended by the first chunk $\aes_{p:q}$.
+identifying each block as a conditional via the same expansion: the past for step $k \geq q+1$ is the given history $\aes_{<p}$ extended by the first chunk $\aes_{p:q}$.
 
-Note: for a deterministic policy, \cref{prob:det_interaction} simplifies this further --- each factor $\pi(a_k \mid \aes_{<k})\, \nu(e_k \mid \aes_{<k} a_k)$ becomes just $\nu(e_k \mid \aes_{<k}\, a^*_k)$.
+Note: for a deterministic policy, \cref{prob:det_interaction} simplifies this further: each factor $\pi(a_k \mid \aes_{<k})\, \nu(e_k \mid \aes_{<k} a_k)$ becomes just $\nu(e_k \mid \aes_{<k}\, a^*_k)$.
 \end{solution}
 
 
@@ -339,7 +339,7 @@ For a function $f : \cH \to \mathbb{R}$ of a finite future segment $\aes'_{t:m}$
     \Ex_\nu^\pi[f \mid \aes_{<t}]
     ~:=~ \sum_{\aes'_{t:m}} \nu^\pi(\aes'_{t:m} \mid \aes_{<t})\, f(\aes'_{t:m}).
 \]
-For functions of the infinite future (like the value function), we define $\Ex_\nu^\pi[f \mid \aes_{<t}] := \lim_{m \to \infty} \Ex_\nu^\pi[f_m \mid \aes_{<t}]$, where $f_m$ depends only on $\aes'_{t:m}$.
+For functions $f$ of the infinite future (like the value function), with a sequence $f_1, f_2, \ldots \to f$, where $f_m$ depends only on $\aes'_{t:m}$, we define $\Ex_\nu^\pi[f \mid \aes_{<t}] := \lim_{m \to \infty} \Ex_\nu^\pi[f_m \mid \aes_{<t}]$, 
 \end{definition}
 
 \begin{definition}[Value function\footnote{See \hyperref[sec:appendix_value]{Appendix~B} for a worked example. For simplicity, we 
@@ -366,11 +366,11 @@ The \textbf{Bayes-optimal policy} is $\pi_\xi^* \in \argmax_\pi V_\xi^\pi$.
 
 \begin{defbox}[AIXI]
 All results in this sheet hold for any countable $\cM$ and prior weights $w_\nu$.
-\textbf{AIXI} is a special case of the Bayes-optimal policy $\pi_\xi^*$ for the particular choice $\cM :=$ the class of all lower-semicomputable chronological semimeasures, and prior $w_\nu := 2^{-K(\nu)}$, where $K(\nu)$ is the Kolmogorov complexity of $\nu$ --- the length of the shortest program that computes $\nu$.
+\textbf{AIXI} is a special case of the Bayes-optimal policy $\pi_\xi^*$ for the particular choice $\cM :=$ the class of all lower-semicomputable chronological semimeasures, and prior $w_\nu := 2^{-K(\nu)}$, where $K(\nu)$ is the Kolmogorov complexity of $\nu$: the length of the shortest program that computes $\nu$.
 The resulting agent is written $\pi^*_{\xi_U}$, or simply AI$\xi$.
 
 \textbf{Why this $\cM$?}
-By including every computable environment, the assumption $\mu \in \cM$ reduces to ``the universe is computable'' --- as weak an assumption as one can make.
+By including every computable environment, the assumption $\mu \in \cM$ reduces to ``the universe is computable'': as weak an assumption as one can make.
 
 \textbf{Why this prior?}
 The prior $2^{-K(\nu)}$ is \emph{dominant}: for any other computable prior $w'_\nu$, there exists a constant $c > 0$ such that $2^{-K(\nu)} \geq c \cdot w'_\nu$ for all $\nu$. So AIXI cannot be ``outbelieved'' by any computable agent.
@@ -384,6 +384,10 @@ See \cite{Hutter:24uaibook2}: Chapter~2.7 for Kolmogorov complexity, Chapters~3.
 
 %===================================
 \section{Properties of the Bayesian Mixture}\label{prob:mixture_props}
+
+
+Several of these results are already proven in the Solomonoff worksheet, but are included
+here for reference. 
 
 \mysubsection{1}{[10] ($\ast$) (Posterior update)\label{prob:posterior_update}
 Show that the posterior updates multiplicatively:}
@@ -762,7 +766,7 @@ So \cref{thm:dom_conv} gives:
 \end{solution}
 
 \cref{prob:linearity_finite} shows $V_\xi^\pi$ is linear in $\nu$.
-The optimal value $V_\xi^*$ is only convex --- a single policy must perform well across all $\nu \in \cM$ simultaneously, rather than being tailored to each $\nu$ individually.
+The optimal value $V_\xi^*$ is only convex: a single policy must perform well across all $\nu \in \cM$ simultaneously, rather than being tailored to each $\nu$ individually.
 
 \mysubsection{3}{[10] ($\ast$) (Convexity of $V_\xi^*$)\label{prob:convex_opt}
 Using \cref{prob:linearity_finite}, show that for finite $m$:}
@@ -917,7 +921,7 @@ Consider the event $F := \text{``}o_t = 1\text{ for infinitely many } t\text{''}
 \emph{Step 1: Build $F^c$ from finite-prefix events.}
 For each $t$, the set $\{o_t = 0\} := \{\aes_{1:t} : o_t = 0\}$ is a finite-length event.
 For each $N$ and $T \geq N$, the set $D_{N,T} := \bigcap_{t=N}^{T} \{o_t = 0\}$ is also a finite-length event (determined by time $T$).
-Define $C_N := \bigcap_{t=N}^{\infty} \{o_t = 0\}$ (``all zeros from time $N$ onwards'') --- this is an infinite-history event, built as a countable intersection of finite-length events.
+Define $C_N := \bigcap_{t=N}^{\infty} \{o_t = 0\}$ (``all zeros from time $N$ onwards''): this is an infinite-history event, built as a countable intersection of finite-length events.
 Then $F^c = \bigcup_{N=1}^\infty C_N$ (``eventually all zeros'').
 
 \medskip
@@ -936,7 +940,7 @@ Since $D_{N,T} \supseteq D_{N,T+1} \supseteq \cdots$ (adding more constraints), 
 By countable additivity: $\nu^\pi(F^c) \leq \sum_{N=1}^\infty \nu^\pi(C_N) = 0$, so $\nu^\pi(F) = 1$.
 A fair coin shows 1 infinitely often, almost surely.
 
-As such, $F^c$ --- the set of all infinite histories containing only finitely many 1s --- is a $\nu^\pi$-measure-zero set. Such histories ``exist'' as infinite sequences, but occur with probability zero.
+As such, $F^c$ (the set of all infinite histories containing only finitely many 1s) is a $\nu^\pi$-measure-zero set. Such histories ``exist'' as infinite sequences, but occur with probability zero.
 \end{examplebox}
 
 \begin{definition}[Covering\protect\footnotemark]\label{def:covering}
@@ -964,7 +968,7 @@ The set $\{f_t \not\to 0\}$ looks intimidating, but it reads naturally from the 
 
     \item $\bigcup_{t=N}^\infty \big\{|f_t| > \tfrac{1}{n}\big\}$: ``at \emph{some} time $t \geq N$, $f_t$ is at least $\tfrac{1}{n}$ away from zero.''
 
-    \item $\bigcap_{N=1}^\infty \bigcup_{t=N}^\infty \big\{|f_t| > \tfrac{1}{n}\big\}$: ``for \emph{every} $N$, there is some $t \geq N$ where $f_t$ is at least $\tfrac{1}{n}$ from zero'' --- i.e., $f_t$ exceeds $\tfrac{1}{n}$ \emph{infinitely often}.
+    \item $\bigcap_{N=1}^\infty \bigcup_{t=N}^\infty \big\{|f_t| > \tfrac{1}{n}\big\}$: ``for \emph{every} $N$, there is some $t \geq N$ where $f_t$ is at least $\tfrac{1}{n}$ from zero'', i.e., $f_t$ exceeds $\tfrac{1}{n}$ \emph{infinitely often}.
 
     \item $\bigcup_{n=1}^\infty \bigcap_{N=1}^\infty \bigcup_{t=N}^\infty \big\{|f_t| > \tfrac{1}{n}\big\}$: ``for \emph{some} $\tfrac{1}{n} > 0$, $f_t$ exceeds $\tfrac{1}{n}$ infinitely often.''
 \end{itemize}
@@ -976,7 +980,7 @@ Each layer is a countable union or intersection of the previous, so the whole se
 
 The Bayesian agent uses the mixture $\xi$ because the true environment $\mu$ is unknown.
 A natural question: does planning with $\xi$ eventually become as good as planning with $\mu$?
-The following theorem says \emph{yes} --- the value of any fixed policy $\pi$, as evaluated by $\xi$, converges to the value under the true environment $\mu$, along histories that $\mu^\pi$ actually generates.\footnote{If the true environment is $\mu$ then we don't care about the behaviour of the Bayesian agent on histories that have $\mu^\pi$-probability zero: such histories will never be observed anyway.}
+The following theorem says \emph{yes}: the value of any fixed policy $\pi$, as evaluated by $\xi$, converges to the value under the true environment $\mu$, along histories that $\mu^\pi$ actually generates.\footnote{If the true environment is $\mu$ then we don't care about the behaviour of the Bayesian agent on histories that have $\mu^\pi$-probability zero: such histories will never be observed anyway.}
 This tells us that the Bayesian mixture ``learns'' to predict the true environment's value, on policy.
 
 \begin{theorem}[On-policy value convergence; {\cite[Theorem 7.3.1]{Hutter:24uaibook2}}]\label{thm:on_policy}
@@ -1035,7 +1039,7 @@ $\sup_S |P(S \mid \aes_{<t}) - Q(S \mid \aes_{<t})| \to 0$ $P$-almost surely,
 where the supremum ranges over all measurable events $S$ (including events on infinite histories).
 \end{fact}
 
-The proof of Blackwell--Dubins requires the Radon--Nikodym derivative and L\'{e}vy's martingale convergence theorem --- tools from measure theory that are beyond the scope of this sheet.
+The proof of Blackwell--Dubins requires the Radon--Nikodym derivative and L\'{e}vy's martingale convergence theorem: tools from measure theory that are beyond the scope of this sheet.
 See \cite[Chapter~3.9]{Hutter:24uaibook2} for discussion.
 
 \mysubsection{3}{[15] (On-policy convergence) \label{prob:on_policy_proof}
@@ -1084,7 +1088,7 @@ If $\mu \in \cM$ is deterministic and $V_\mu^*(\aes_{<t}) > \varepsilon > 0$ for
 
 \begin{solution}
 By definition, $V_\xi^*(\aes_{<t}) = \sup_\pi V_\xi^\pi(\aes_{<t}) \geq V_\xi^{\pi'}(\aes_{<t})$ for any policy $\pi'$.
-By \cref{prob:linearity} (linearity of $V^\pi$ in the environment):
+By \cref{prob:linearity_inf} (linearity of $V^\pi$ in the environment):
 \[
     V_\xi^{\pi'}(\aes_{<t}) ~=~ \sum_{\nu \in \cM} w(\nu \mid \aes_{<t})\, V_\nu^{\pi'}(\aes_{<t}).
 \]
@@ -1163,16 +1167,16 @@ If equality holds, it is a $\mu^\pi$-\textbf{martingale}.
 \end{definition}
 
 \textbf{Intuition.}
-A supermartingale is a quantity whose expected future value, given the present, is no larger than its current value --- it cannot ``drift upward on average.'' A martingale is the equality case: expected future value equals current value.
+A supermartingale is a quantity whose expected future value, given the present, is no larger than its current value: it cannot ``drift upward on average.'' A martingale is the equality case: expected future value equals current value.
 The key example is the \textbf{likelihood ratio} $X_{\nu,t}(\aes_{1:t}) := \nu(\aes_{1:t})/\mu(\aes_{1:t})$: how much more (or less) likely the observed history is under $\nu$ than under the true environment $\mu$.
-Under $\mu$, this ratio is a martingale --- the true environment does not, on average, favour any alternative $\nu$ over itself.
+Under $\mu$, this ratio is a martingale: the true environment does not, on average, favour any alternative $\nu$ over itself.
 Non-negativity plus the (super)martingale structure forces $X_{\nu,t}$ to converge (by Doob's theorem below), which is the engine behind the self-optimizing proof: it lets us separate environments that remain plausible ($X_{\nu,\infty} > 0$) from those that are eventually ruled out ($X_{\nu,\infty} = 0$), and handle each case differently in Problem~10.
 
 \begin{fact}[Doob's supermartingale convergence]\label{fact:doob}
 If $(X_t)_{t \geq 0}$ is a non-negative $\mu^\pi$-supermartingale, then there exists a function $X_\infty : \cH^\infty \to \mathbb{R}_{\geq 0}$ of the infinite history such that $X_t(\aes_{1:t}) \to X_\infty(\aes_{1:\infty})$ as $t \to \infty$, with $X_\infty(\aes_{1:\infty}) < \infty$, for $\mu^\pi$-almost every infinite history $\aes_{1:\infty}$.
 That is:
 \[
-    \mu^\pi\!\Big(\Big\{\aes_{1:\infty} \in (\cA \times \cE)^\infty : X_t(\aes_{1:t}) \not\to X_\infty(\aes_{1:\infty})) = \infty\Big\}\Big) ~=~ 0.
+    \mu^\pi\!\Big(\Big\{\aes_{1:\infty} \in (\cA \times \cE)^\infty : X_t(\aes_{1:t}) \not\to X_\infty(\aes_{1:\infty})\Big\}\Big) ~=~ 0.
 \]
 \end{fact}
 
@@ -1180,7 +1184,7 @@ For each $\nu \in \cM$, define the likelihood ratio
 \[
     X_{\nu,t} : \cH^t \to \mathbb{R}_{\geq 0}, \qquad X_{\nu,t}(\aes_{1:t}) ~:=~ \frac{\nu(\aes_{1:t})}{\mu(\aes_{1:t})}, \qquad X_{\nu,0} := 1.
 \]
-$X_{\nu,t}$ is a \emph{function} of the history $\aes_{1:t}$, not a number: different histories give different values. Throughout this section and the next, any unqualified statement of the form ``$X_{\nu,t} \geq c$'' or ``$X_{\nu,t} \to X_{\nu,\infty}$'' is shorthand for ``$X_{\nu,t}(\aes_{1:t}) \geq c$'' or ``$X_{\nu,t}(\aes_{1:t}) \to X_{\nu,\infty}(\aes_{1:\infty})$'' holding $\mu^\pi$-almost surely --- i.e.\ on every infinite history outside a set of $\mu^\pi$-measure zero. We will not track these null sets explicitly; their countable union over all claims is still a $\mu^\pi$-null set.
+$X_{\nu,t}$ is a \emph{function} of the history $\aes_{1:t}$, not a number: different histories give different values. Throughout this section and the next, any unqualified statement of the form ``$X_{\nu,t} \geq c$'' or ``$X_{\nu,t} \to X_{\nu,\infty}$'' is shorthand for ``$X_{\nu,t}(\aes_{1:t}) \geq c$'' or ``$X_{\nu,t}(\aes_{1:t}) \to X_{\nu,\infty}(\aes_{1:\infty})$'' holding $\mu^\pi$-almost surely, i.e.\ on every infinite history outside a set of $\mu^\pi$-measure zero. We will not track these null sets explicitly; their countable union over all claims is still a $\mu^\pi$-null set.
 
 \mysubsection{1}{[15] Show that $X_{\nu,t}$ is a $\mu^\pi$-martingale: $\Ex_{\mu^\pi}[X_{\nu,t} \mid \aes_{<t}] = X_{\nu,t-1}$. \label{prob:martingale}}
 
@@ -1204,7 +1208,7 @@ In the last step, $\mu(e_t \mid \aes_{<t} a_t)$ cancels. Since $\nu$ is a probab
 \[
     \Ex_{\mu^\pi}[X_{\nu,t} \mid \aes_{<t}] ~=~ X_{\nu,t-1} \cdot 1 \cdot 1 ~=~ X_{\nu,t-1}.
 \]
-Since $X_{\nu,t} \geq 0$ (a ratio of non-negative quantities), $(X_{\nu,t})_{t \geq 0}$ is a non-negative $\mu^\pi$-martingale --- in particular, a non-negative $\mu^\pi$-supermartingale.
+Since $X_{\nu,t} \geq 0$ (a ratio of non-negative quantities), $(X_{\nu,t})_{t \geq 0}$ is a non-negative $\mu^\pi$-martingale, in particular, a non-negative $\mu^\pi$-supermartingale.
 \end{solution}
 
 \mysubsection{2}{[05] Apply \cref{fact:doob} to conclude $X_{\nu,t} \to X_{\nu,\infty} < \infty$ $\mu^\pi$-a.s. \label{prob:X_converges}}
@@ -1225,7 +1229,7 @@ From the definition:
     ~=~ \sum_\nu w_\nu \cdot \frac{\nu(\aes_{1:t})}{\mu(\aes_{1:t})}
     ~=~ \sum_\nu w_\nu X_{\nu,t}.
 \]
-By \cref{prob:dominance} (dominance): $\xi(\aes_{1:t}) \geq w_\mu \cdot \mu(\aes_{1:t})$, so $X_{\xi,t} = \xi(\aes_{1:t})/\mu(\aes_{1:t}) \geq w_\mu > 0$.
+By \cref{fact:dominance}: $\xi(\aes_{1:t}) \geq w_\mu \cdot \mu(\aes_{1:t})$, so $X_{\xi,t} = \xi(\aes_{1:t})/\mu(\aes_{1:t}) \geq w_\mu > 0$.
 
 Since $\cM$ is finite, $X_{\xi,t} = \sum_\nu w_\nu X_{\nu,t}$ is a finite sum of convergent sequences, so $X_{\xi,t} \to X_{\xi,\infty} := \sum_\nu w_\nu X_{\nu,\infty} < \infty$ $\mu^\pi$-a.s., with $X_{\xi,\infty} \geq w_\mu > 0$.
 \end{solution}
@@ -1300,7 +1304,7 @@ Since $E_\varepsilon \subseteq E$, $\nu^\pi[E_\varepsilon] \leq \nu^\pi[E]$. Div
 %===================================
 \section{Proving the Self-Optimizing Property}\label{prob:selfopt}
 
-Fix a policy $\tilde\pi$ that is self-optimizing for $\cM$ with respect to $\pi$ (\cref{def:selfopt}) --- its existence is the hypothesis of \cref{thm:selfopt}.
+Fix a policy $\tilde\pi$ that is self-optimizing for $\cM$ with respect to $\pi$ (\cref{def:selfopt}): its existence is the hypothesis of \cref{thm:selfopt}.
 For each $\nu \in \cM$, define the \textbf{suboptimality gap}
 \[
     \delta_{\nu,t} : \cH^{t-1} \to [0,1], \qquad \delta_{\nu,t}(\aes_{<t}) ~:=~ V_\nu^*(\aes_{<t}) - V_\nu^{\tilde\pi}(\aes_{<t}).
@@ -1345,7 +1349,7 @@ Rearranging: $\sum_\nu w(\nu)[V_\nu^* - V_\nu^{\pi_\xi^*}] \leq \sum_\nu w(\nu)[
 
 \mysubsection{2}{[10] (Vanishing posterior) Show: if $X_{\nu,\infty} = 0$ then $w(\nu \mid \aes_{<t}) \to 0$ $\mu^\pi$-a.s. \label{prob:vanishing_posterior}}
 
-\textit{Hint:} Show $w(\nu \mid \aes_{<t}) = w_\nu X_{\nu,t}/X_{\xi,t}$ and use \cref{prob:X_bounded_mu}.
+\textit{Hint:} Show $w(\nu \mid \aes_{<t}) = w_\nu X_{\nu,t-1}/X_{\xi,t-1}$ and use \cref{prob:X_bounded_mu}.
 
 \begin{solution}
 From the posterior weight formula, dividing numerator and denominator by $\mu(\aes_{<t})$:
@@ -1382,7 +1386,7 @@ If $X_{\nu,\infty} = 0$, then $X_{\nu,t-1} \to 0$ $\mu^\pi$-a.s.\ (\cref{prob:X_
     ~=~ 0.
 \]
 
-\emph{What this says.} ``$\delta_{\nu,t} \to 0$ $\mu^\pi$-a.s.\ on $\{X_{\nu,\infty} > 0\}$'' is shorthand for exactly this event statement: among infinite histories on which the likelihood ratio stays bounded away from zero, all but a $\mu^\pi$-null subset are ones where $\delta_{\nu,t}(\aes_{<t}) \to 0$. We do \emph{not} claim convergence on histories where $X_{\nu,\infty} = 0$ --- that case is handled separately in \cref{prob:vanishing_posterior} via the posterior weight.
+\emph{What this says.} ``$\delta_{\nu,t} \to 0$ $\mu^\pi$-a.s.\ on $\{X_{\nu,\infty} > 0\}$'' is shorthand for exactly this event statement: among infinite histories on which the likelihood ratio stays bounded away from zero, all but a $\mu^\pi$-null subset are ones where $\delta_{\nu,t}(\aes_{<t}) \to 0$. We do \emph{not} claim convergence on histories where $X_{\nu,\infty} = 0$: that case is handled separately in \cref{prob:vanishing_posterior} via the posterior weight.
 \end{solution}
 
 \mysubsection{4}{[10] (Single-term convergence) Combine \cref{prob:vanishing_posterior} and \cref{prob:delta_transfer} to show $w(\nu \mid \aes_{<t}) \delta_{\nu,t} \to 0$ $\mu^\pi$-a.s. \label{prob:single_term}}
@@ -1402,7 +1406,7 @@ These two cases cover all infinite histories ($\mu^\pi$-a.s.), so $w(\nu \mid \a
 \mysubsection{5}{[15] (Self-Optimizing Theorem) Combine \cref{prob:single_term}, \cref{prob:chain_ineq}, \cref{prob:X_bounded_mu} to finally prove the
  main result of \cref{thm:selfopt}.}
 
-\textit{Hint:} $w(\mu \mid \aes_{<t}) = w_\mu/X_{\xi,t}$.
+\textit{Hint:} $w(\mu \mid \aes_{<t}) = w_\mu/X_{\xi,t-1}$.
 
 \begin{solution}
 Since $\cM = \{\nu_1, \ldots, \nu_N\}$ is finite, we can sum \cref{prob:single_term} over all $\nu \in \cM$:
@@ -1506,6 +1510,6 @@ Problems marked \textbf{($\ast$)} are enrichment: they are off the critical path
 
 \clearpage
 \bibliographystyle{alphaurl}
-\bibliography{references}
+\bibliography{biblo}
 
 \end{document}
