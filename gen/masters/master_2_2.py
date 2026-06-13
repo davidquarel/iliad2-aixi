@@ -85,7 +85,7 @@ ipython.run_line_magic("autoreload", "2")
 # import sys
 
 # if "google.colab" in sys.modules:
-#     %pip install -q torch numpy gymnasium jaxtyping tqdm "plotly>=5" opencv-python pandas imageio imageio-ffmpeg torchinfo wandb
+#     %pip install -q torch numpy "gymnasium==0.29.0" jaxtyping tqdm "plotly>=5" opencv-python pandas imageio imageio-ffmpeg torchinfo wandb
 #     !git clone --depth 1 -b notebooks --filter=blob:none --sparse https://github.com/davidquarel/iliad2-aixi /content/iliad
 #     !cd /content/iliad && git sparse-checkout set part_vpg
 #     if "/content/iliad/part_vpg" not in sys.path:
