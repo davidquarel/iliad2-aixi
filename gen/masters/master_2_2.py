@@ -85,7 +85,7 @@ ipython.run_line_magic("autoreload", "2")
 # import sys
 
 # if "google.colab" in sys.modules:
-#     %pip install -q torch numpy gymnasium eindex jaxtyping tqdm "plotly>=5" opencv-python pandas imageio imageio-ffmpeg torchinfo wandb
+#     %pip install -q torch numpy gymnasium jaxtyping tqdm "plotly>=5" opencv-python pandas imageio imageio-ffmpeg torchinfo wandb
 #     !git clone --depth 1 -b notebooks --filter=blob:none --sparse https://github.com/davidquarel/iliad2-aixi /content/iliad
 #     !cd /content/iliad && git sparse-checkout set part_vpg
 #     if "/content/iliad/part_vpg" not in sys.path:
@@ -113,7 +113,6 @@ import numpy as np
 import torch as t
 import torch.nn.functional as F
 import wandb
-from eindex import eindex
 from gymnasium.spaces import Box, Discrete
 from jaxtyping import Bool, Float, Int
 from torch import Tensor, nn
@@ -147,7 +146,7 @@ from part2_q_learning_and_policy_gradient.utils import make_env
 from plotly_utils import line, plot_cartpole_obs_and_dones
 from rl_utils import generate_and_plot_trajectory, make_env
 
-device = t.device("mps" if t.backends.mps.is_available() else "cuda" if t.cuda.is_available() else "cpu")
+device = t.device("cuda" if t.cuda.is_available() else "mps" if t.backends.mps.is_available() else "cpu")
 
 MAIN = __name__ == "__main__"
 
@@ -678,7 +677,6 @@ class VPGAgent:
         log_probs = F.log_softmax(logits, dim=-1)
         actions = t.multinomial(log_probs.exp(), num_samples=1).squeeze(-1)
         logprobs = log_probs.gather(-1, actions.unsqueeze(-1)).squeeze(-1)
-        # alternative logprobs = eindex(log_probs, actions, "env time [env time] -> env time")
         return actions, logprobs, None
         # END SOLUTION
 
@@ -786,7 +784,7 @@ def compute_logprobs_and_entropy(
     # SOLUTION
     logits = pi(tau.obs)
     log_probs = F.log_softmax(logits, dim=-1)
-    log_probs_taken = eindex(log_probs, tau.actions, "env time [env time] -> env time")
+    log_probs_taken = log_probs.gather(-1, tau.actions.unsqueeze(-1)).squeeze(-1)
     probs = log_probs.exp()
     entropy = -(probs * log_probs).sum(dim=-1)
     return log_probs_taken, entropy
