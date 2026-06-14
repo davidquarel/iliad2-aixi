@@ -71,8 +71,6 @@ The original lab and supporting library, written in JAX, can be found at [github
 r'''
 ## Content & Learning Objectives
 
-TODO rewrite at the end
-
 ### 1️⃣ Environments
 
 We introduce the environment we'll be working with today: the pottery shop.
@@ -80,15 +78,17 @@ We introduce the environment we'll be working with today: the pottery shop.
 > ##### Learning Objectives
 >
 > - Understand how the pottery shop environment is implemented as batched tensor operations
-> - Design and interact with your own pottery shop layout
+> - Build intuition for the dynamics of the environment
 
 ### 2️⃣ Reward Functions
 
-We introduce the third element of reinforcement learning — the reward function — and use the provided PPO implementation to train an agent in your environment.
+We introduce the third element of reinforcement learning, the reward function, and use the provided PPO implementation to train an agent in the pottery shop.
 
 > ##### Learning Objectives
 >
 > - Interpret a reward function: what behaviour does it incentivise, and what behaviour was it *meant* to incentivise?
+> - Train an agent with the provided PPO implementation
+> - Interpret a trained agent's behaviour, and spot when it diverges from the designer's intent
 
 ### 3️⃣ Specification Gaming
 
@@ -222,7 +222,7 @@ DISCOUNT_RATE = 0.995
 # ! TAGS: []
 
 r'''
-# 1️⃣ Agents and Environments
+# 1️⃣ Environments
 '''
 
 # ! CELL TYPE: markdown
@@ -235,8 +235,6 @@ r'''
 Here is a picture of an environment called "pottery shop".
 
 <img src="https://raw.githubusercontent.com/matomatical/reward-lab/main/environment.png" width="480">
-
-TODO: move picture from matt's repo to ARENA_img
 
 Pottery shop is an example of a grid-world environment, where everything plays out on a finite grid of positions (in this case, a 6 by 6 grid).
 
@@ -1852,8 +1850,9 @@ Some ideas for things to vary:
 
 # EXERCISE
 if MAIN:
-    # YOUR CODE HERE - design probe layouts, predict, and inspect rollouts
-    env_probe = Environment(???) # TODO
+    # YOUR CODE HERE - design probe layouts
+    # env_probe = Environment(...)
+    raise NotImplementedError()
     
     rollout = collect_rollout(
         env=env_probe,
@@ -2278,13 +2277,6 @@ Hopefully you have gained an appreciation for the relationship between a designe
 the intended goal during training, will be the same goal that the policy will
 continue to pursue later in environments where the intended goal, and the learned goal,
 diverge.
-
-# TODO COMMENT OUT FOR ILIAD
-You will see various reflections of this conceptual pattern playing out in different learning settings throughout the rest of the ARENA material, most notably on RLHF day: where the reward function is itself a learned model, and while optimizing this initially 
-correlated with the intended goal (training to maximise a reward model that approximates
-human values makes the model produce nice outputs), under too strong optimization,
-reward hacking emerges where the model being optimized will discover and exploit 
-any quirks of the reward model to find what inputs it maximally prefers.
 '''
 
 # ! CELL TYPE: markdown
