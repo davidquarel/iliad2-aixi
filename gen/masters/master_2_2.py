@@ -1274,14 +1274,13 @@ r'''
 
 Vanilla Policy Gradient can often be a bit finicky and unstable to train (which is why in practice we use PPO instead).
 None-the-less, I've tried to find a good set of hyperparameters such that it trains in a minute or so.
-Running this should cause a grid of 4x4 videos to render in the notebook. The background flashes pink when
-the agent dies and is reset so you can easily see when a new episode starts.
 
-Set
-```python
-live_vis = True
-```
-if you want to see videos of the agetn as it trains in-line.
+After training finishes, the next cell renders the trained agent as a 4x4 grid of cartpoles (see
+[Watching the trained agent](#watching-the-trained-agent) below). If you'd rather watch the agent
+improve *while* it trains, set `live_viz=True` in the args below: every `video_log_freq` rollouts the
+current rollout is rendered inline as the same 4x4 grid. In either view, a cell's background flashes
+pink the moment that environment resets (the pole fell / the cart left the track), so you can see at a
+glance which envs are dying and which are being balanced.
 '''
 
 # ! CELL TYPE: code
@@ -1289,8 +1288,8 @@ if you want to see videos of the agetn as it trains in-line.
 # ! TAGS: []
 
 if MAIN:
-    device = t.device("cuda")
-
+    # `device` is defined once at the top with a cuda > mps > cpu fallback; reuse it so this runs
+    # on a CPU Colab runtime too (VPG is slow on CPU, but it won't hard-crash on a missing GPU).
     args_fast = VPGArgs(
         use_wandb=False,
         num_envs=512,
@@ -1316,4 +1315,42 @@ if MAIN:
     )
     trainer = VPGTrainer(args_fast)
     trainer.train()
+
+# ! CELL TYPE: markdown
+# ! FILTERS: []
+# ! TAGS: []
+
+r'''
+## Watching the trained agent
+
+Now that training has finished, let's actually watch the policy we learned. We reuse the trained
+agent to collect one fresh rollout and render the first 16 environments as a 4x4 grid of cartpoles,
+using the same `utils.render_rollout_grid_html` helper that powers `video_log_freq` during training
+(reusing the agent costs no extra training, and rendering the rollout we just collected costs no
+extra env steps). A cell flashes pink the instant that environment resets, so a pole that stays
+upright with no pink flashes is an environment the agent is balancing all the way to the 500 step
+horizon: exactly what we trained the `traj_len` curve to reach.
+'''
+
+# ! CELL TYPE: code
+# ! FILTERS: []
+# ! TAGS: []
+
+if MAIN:
+    from IPython.display import display
+
+    # Collect one fresh rollout from the trained agent (no gradients needed), then render its first
+    # 16 envs as a 4x4 cartpole grid. `trainer` exposes everything the Rollout needs.
+    eval_rollout = Rollout(
+        num_envs=trainer.num_envs,
+        max_steps=trainer.args.num_steps_per_rollout,
+        obs_shape=trainer.obs_shape,
+        action_shape=trainer.action_shape,
+        device=trainer.args.device,
+    )
+    with t.inference_mode():
+        eval_rollout, _ = trainer.agent.gen_rollout(eval_rollout)
+
+    tau = eval_rollout.get()
+    display(utils.render_rollout_grid_html(tau.obs, dones=tau.dones))
 
