@@ -175,7 +175,7 @@ $$
 $$
 
 The problem is that the return is a sum of rewards from the trajectory, and the trajectory itself is a result of sampling from the policy, over and over, 
-as well as being dependant on the environmental distribution, which we do not have access to.
+as well as being dependent on the environmental distribution, which we do not have access to.
 There is no clear way to directly compute the gradient of the return with respect to the policy parameters.
 The solution here is the **policy gradient theorem**, which states that we can instead use the return weighted by the gradient of the log-probability as an unbiased estimator of the gradient of the return.
 
@@ -332,7 +332,7 @@ summary(net)
 r'''
 ## Rollout Buffer
 
-The way that our implementation of VPG will work is simple: we perform a rollout across `num_envs` many environments in parallel, and store the trajectories for each. We then learn from that set of rollouts, and then discard it afterwards. One rollout, one learning step. This means we are always learning **on-policy**: we only every learn from data that the current model actually generated. We will use a rollout buffer to store the trajectories.
+The way that our implementation of VPG will work is simple: we perform a rollout across `num_envs` many environments in parallel, and store the trajectories for each. We then learn from that set of rollouts, and then discard it afterwards. One rollout, one learning step. This means we are always learning **on-policy**: we only ever learn from data that the current model actually generated. We will use a rollout buffer to store the trajectories.
 '''
 
 # ! CELL TYPE: markdown
@@ -349,7 +349,7 @@ r'''
 > You should spend up to 20 minutes on this exercise.
 > ```
 
-The `Rollout` class will store a set of `num_envs` many trajectories. We do not shuffle up anything, or break up a episode into little experiences as we did for DQN. The smallest datapoint is one full trajectory:
+The `Rollout` class will store a set of `num_envs` many trajectories. We do not shuffle up anything, or break up an episode into little experiences as we did for DQN. The smallest datapoint is one full trajectory:
 
 $$\tau = s_0 \; a_0 \; r_0 \; s_1 \; a_1 \; r_1 \ldots s_T \; a_T \; r_T$$
 
@@ -358,7 +358,7 @@ The following methods need to be completed:
 * `add_step` - adds information gathered from timestep $t$ to the rollout buffer
 * `get_batches` - returns a list of `RolloutTensors` objects, each containing `batch_size` many trajectories.
 
-We store the tensors for each step as seperate lists, and then stack once at the end to get the final tensors with the `.get` function. This ends up being cheaper as it avoids spinning up indexed-write kernels per step.
+We store the tensors for each step as separate lists, and then stack once at the end to get the final tensors with the `.get` function. This ends up being cheaper as it avoids spinning up indexed-write kernels per step.
 
 <details>
 <summary>Hint</summary>
@@ -557,7 +557,7 @@ class VPGArgs:
 r'''
 ## VPG Agent
 
-The following class will be our agent, that will generate rollouts via interaction between the agent and environment, as well as generate actions my sampling them from the policy network. Recall that the policy network now maps observations to logits for each action, so we can sample actions from the distribution.
+The following class will be our agent, that will generate rollouts via interaction between the agent and environment, as well as generate actions by sampling them from the policy network. Recall that the policy network now maps observations to logits for each action, so we can sample actions from the distribution.
 '''
 
 # ! CELL TYPE: markdown
@@ -611,7 +611,7 @@ class VPGAgent:
     def gen_rollout(self, rollout: Rollout) -> tuple[Rollout, dict[str, Any]]:
         """
         Compute the full episode rollout for all environments in parallel, adding them to the rollout buffer.
-        It then returns the rollout buffer, and a dictionary of info contining the lifespan.
+        It then returns the rollout buffer, and a dictionary of info containing the lifespan.
 
         Returns `infos` (list of dictionaries containing info we will log).
         """
@@ -662,7 +662,7 @@ class VPGAgent:
         self, obs: Float[Tensor, " num_envs *obs_shape"]
     ) -> tuple[Int[Tensor, " num_envs *action_shape"], Float[Tensor, " num_envs"], Float[Tensor, " num_envs"]]:
         """
-        Computes the agents turn: given an observation for each environment,
+        Computes the agent's turn: given an observation for each environment,
         sample the action the agent takes, along with the log_probs of that action,
         and the entropy of the action distribution.
         Use t.multinomial to sample the actions.
@@ -1303,7 +1303,7 @@ if MAIN:
         normalize_returns=False,
         lr=1e-3,  # risky!
         use_lr_decay=True,
-        use_iw=False,  # dont' need it if we only use each rollout once in one
+        use_iw=False,  # don't need it if we only use each rollout once
         lr_end=1e-3,
         lr_frac=0.6,
         compile=False,

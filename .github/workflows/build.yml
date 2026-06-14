@@ -81,7 +81,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        file: [iliad-david1-slides]
+        file: [iliad-david1-slides, vpg-slides, goalmisgen-slides]
         mode: [present, handout]
     steps:
       - uses: actions/checkout@v4
@@ -207,6 +207,8 @@ jobs:
               solomonoff-all)      echo "Solomonoff Induction Exercises" ;;
               aixi-worksheet)      echo "AIXI Exercises" ;;
               iliad-david1-slides) echo "Universal AI: Solomonoff Induction &amp; AIXI" ;;
+              vpg-slides)          echo "Vanilla Policy Gradient" ;;
+              goalmisgen-slides)   echo "Goal Misgeneralisation &amp; Specification Gaming" ;;
               *)                   echo "$1" ;;
             esac
           }

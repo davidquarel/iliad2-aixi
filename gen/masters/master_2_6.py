@@ -42,7 +42,7 @@ When we train an agent with reinforcement learning, we communicate what we want 
 
 2. **Goal misgeneralisation**: the agent learns a goal that is consistent with the reward function *on the training distribution*, but which comes apart from the intended goal under distribution shift. The agent remains capable in the new environments, it just capably pursues the wrong thing.
 
-Goal misgeneralisation is the more subtle of the two: even if you could perfectly specify a reward function that fully encapsulates all of the desires you have of the agent, the agent internally might still learn the wrong thing, and from a back-box perspective there is no way to tell the difference between the two (while on the training distribution).
+Goal misgeneralisation is the more subtle of the two: even if you could perfectly specify a reward function that fully encapsulates all of the desires you have of the agent, the agent internally might still learn the wrong thing, and from a black-box perspective there is no way to tell the difference between the two (while on the training distribution).
 
 We'll explore both of these failure modes hands-on, in a simple grid-world environment called the **pottery shop**: a small robot shares a shop floor with fragile urns and piles of broken shards, and we'd like it to clean the shards up without smashing anything in the process. You'll train agents with PPO, watch them learn to hack a naively-designed reward function, fix the specification using **potential shaping** and penalties, and then discover that even a well-specified reward function doesn't protect you from goal misgeneralisation when the deployment environment is out of distribution.
 
@@ -186,7 +186,7 @@ from tqdm import tqdm
 # FILTERS: ~colab
 chapter = "chapter2_rl"
 section = "part6_goalmisgen"
-root_dir = next(p for p in Path.cwd().parents if (p / chapter).exists())
+root_dir = next((p for p in Path.cwd().parents if (p / chapter).exists()), Path.cwd())
 exercises_dir = root_dir / chapter / "exercises"
 section_dir = exercises_dir / section
 if str(exercises_dir) not in sys.path:
@@ -1112,7 +1112,7 @@ r'''
 
 The effect of shaping is to transform a reward function that only gives reward when the robot drops a shard into the bin into a reward function that gets this reward in advance and then loses small amounts of reward while it is holding the shard until it drops it into the bin, so that after discounting, the total return after dropping the shard into the bin is equal. If the robot drops the shard on the floor, it loses the initial reward that was advanced.
 
-In particular, a pickup-then-drop cycle now yields exactly zero discounted return: the loophole that `reward1` left open is now no longer avaliable for the agent to abuse.
+In particular, a pickup-then-drop cycle now yields exactly zero discounted return: the loophole that `reward1` left open is now no longer available for the agent to abuse.
 
 </details>
 '''
@@ -2073,10 +2073,10 @@ the internals of the model to see what the agent is optimising for, or by observ
 the behaviour of the agents on out-of-distribution environments. Here, it's quite
 easy to infer what the out-of-distribution behaviour might be, but in general
 this is an open problem, as it's not a priori always clear what out-of-distribution
-might look like. A sufficently capable agent that is aware that it is in training
+might look like. A sufficiently capable agent that is aware that it is in training
 might deliberately sandbag or act in accordance with the intended objective
-to prevent being updated by training dynamics, and then persue its own goals
-once in deployment. [Anthropic observed this phenomena in 2024.](https://www.anthropic.com/research/alignment-faking)
+to prevent being updated by training dynamics, and then pursue its own goals
+once in deployment. [Anthropic observed this phenomenon in 2024.](https://www.anthropic.com/research/alignment-faking)
 
 </details>
 '''
@@ -2275,10 +2275,10 @@ r'''
 
 Hopefully you have gained an appreciation for the relationship between a designer's intention, a reward function, and a policy's behaviour in reinforcement learning:
 
-* **Goal misspecification/reward hacking/outer alignment failure**: In training environments, if there are behaviours that score higher return than the designer's intended behaviours according to the reward function, then the policy will persue those instead.
+* **Goal misspecification/reward hacking/outer alignment failure**: In training environments, if there are behaviours that score higher return than the designer's intended behaviours according to the reward function, then the policy will pursue those instead.
 * **Goal misgeneralisation/inner alignment failure**: In out-of-distribution environments, the behaviour of the policy is not necessarily determined by what the reward function *would have* incentivised: rather it comes down to the inductive biases of the agent architecture. A goal that is "simpler", that perfectly correlated with
 the intended goal during training, will be the same goal that the policy will
-continue to persue later in environment where the intended goal, and the learned goal,
+continue to pursue later in environments where the intended goal, and the learned goal,
 diverge.
 
 # TODO COMMENT OUT FOR ILIAD
