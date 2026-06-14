@@ -620,9 +620,11 @@ class VPGAgent:
         # Force a *full* reset so every env starts a fresh episode aligned to this rollout's window
         # (otherwise the env's internal timestep persists across rollouts and survivors truncate
         # mid-rollout). CartPole resets every env whose terminated|truncated flag is set.
-        if self.args.full_reset and hasattr(self.envs, "terminated"):
-            self.envs.terminated[:] = True
-            self.envs.truncated[:] = True
+        if self.args.full_reset and hasattr(self.envs, "_terminated"):
+            # `terminated`/`truncated` are methods; the settable per-env flags reset() reads are
+            # the `_terminated`/`_truncated` tensors. Force them so reset() resets every env.
+            self.envs._terminated[:] = True
+            self.envs._truncated[:] = True
         obs, _ = self.envs.reset()  # Need a starting observation
 
         dead = t.zeros(self.args.num_envs, dtype=t.bool, device=device)
@@ -993,7 +995,7 @@ class VPGTrainer:
         self.run_name = f"{args.env_id}__{args.wandb_project_name}__seed{args.seed}__{time.strftime('%Y%m%d-%H%M%S')}"
 
         if args.env_id == "CartPole-gpu":
-            self.envs = CartPole(args.num_envs, device=device)
+            self.envs = CartPole(num_envs=args.num_envs, device=device)
         elif args.env_id == "Probe4-v0":
             self.envs = Probe4(args.num_envs)
         elif args.env_id == "Probe5-v0":
