@@ -1311,7 +1311,7 @@ if MAIN:
         seed=1337,
         device=device,
         video_log_freq=10,
-        live_viz=False,
+        live_viz=True,
     )
     trainer = VPGTrainer(args_fast)
     trainer.train()
