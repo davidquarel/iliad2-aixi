@@ -232,14 +232,16 @@ jobs:
           <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Iliad Intensive — Solomonoff &amp; AIXI</title>
+          <title>Iliad Intensive</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
                    max-width: 760px; margin: 2.5rem auto; padding: 0 1.2rem;
                    color: #222; line-height: 1.55; }
             h1 { font-size: 1.6rem; border-bottom: 1px solid #eaecef; padding-bottom: .3rem; }
             .lede { color: #57606a; margin-top: .2rem; }
-            h2 { font-size: 1.15rem; margin-top: 2rem; color: #24292e; }
+            h2 { font-size: 1.25rem; margin-top: 2.2rem; color: #24292e;
+                 border-bottom: 1px solid #eaecef; padding-bottom: .2rem; }
+            h3 { font-size: 1rem; margin: 1.1rem 0 .2rem; color: #57606a; font-weight: 600; }
             ul { list-style: none; padding-left: 0; }
             li { padding: .35rem 0; }
             a { color: #0366d6; text-decoration: none; }
@@ -252,48 +254,53 @@ jobs:
           </style>
           </head>
           <body>
-          <h1>Iliad Intensive — Solomonoff &amp; AIXI</h1>
-          <p class="lede">London Initiative for Safe AI · worksheets &amp; slides, rebuilt on every push.</p>
+          <h1>Iliad Intensive</h1>
           HEAD
 
-            # --- Worksheets: explicit order (Solomonoff first, then AIXI) ---
-            echo "<h2>Worksheets</h2>"
-            echo "<ul>"
-            for base in solomonoff-all aixi-worksheet; do
-              [ -e "public/${base}-nosol.pdf" ] || continue
-              echo "<li>$(title_of "$base")"
-              [ -e "public/${base}-nosol.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./${base}-nosol.pdf\">📄 Worksheet</a>"
-              [ -e "public/${base}-sol.pdf" ]   && echo "<span class=\"sep\">·</span><a href=\"./${base}-sol.pdf\">✅ With solutions</a>"
+            # helper: emit a slides <li> (present + handout) for a base name
+            slide_li() {
+              [ -e "public/$1-present.pdf" ] || return 0
+              echo "<li>$(title_of "$1")"
+              echo "<span class=\"sep\">·</span><a href=\"./$1-present.pdf\">🎬 Slides (with pauses)</a>"
+              [ -e "public/$1-handout.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./$1-handout.pdf\">📄 Handout (no pauses)</a>"
               echo "</li>"
-            done
-            echo "</ul>"
-
-            # --- Slides: one row per base, with present (pauses) + handout ---
-            echo "<h2>Slides</h2>"
-            echo "<ul>"
-            for pdf in public/*-present.pdf; do
-              [ -e "$pdf" ] || continue
-              base=$(basename "$pdf" -present.pdf)
-              echo "<li>$(title_of "$base")"
-              [ -e "public/${base}-present.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./${base}-present.pdf\">🎬 Slides (with pauses)</a>"
-              [ -e "public/${base}-handout.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./${base}-handout.pdf\">📄 Handout (no pauses)</a>"
+            }
+            # helper: emit a worksheet <li> (no-solutions + solutions) for a base name
+            worksheet_li() {
+              [ -e "public/$1-nosol.pdf" ] || return 0
+              echo "<li>$(title_of "$1")"
+              echo "<span class=\"sep\">·</span><a href=\"./$1-nosol.pdf\">📄 Worksheet</a>"
+              [ -e "public/$1-sol.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./$1-sol.pdf\">✅ With solutions</a>"
               echo "</li>"
-            done
-            echo "</ul>"
+            }
 
-            # --- Interactive exercises: links open the generated notebooks in Colab ---
-            echo "<h2>Interactive Exercises (Colab)</h2>"
-            echo "<ul>"
             COLAB="https://colab.research.google.com/github/${REPO}/blob/notebooks"
+
+            # ===== D.2 Policy Gradients and Misgeneralization =====
+            echo "<h2>D.2 Policy Gradients and Misgeneralization</h2>"
+            echo "<h3>Slides</h3><ul>"
+            slide_li vpg-slides
+            slide_li goalmisgen-slides
+            echo "</ul>"
+            echo "<h3>Interactive exercises (Colab)</h3><ul>"
             echo "<li>Vanilla Policy Gradient (CartPole)<span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_solutions.ipynb\">✅ Solutions</a></li>"
             echo "<li>Goal Misgeneralisation &amp; Specification Gaming<span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_solutions.ipynb\">✅ Solutions</a></li>"
             echo "</ul>"
-
-            # --- Interactive demo: the in-browser pottery shop grid world ---
             if [ -e public/play.html ]; then
-              echo "<h2>Interactive Demo</h2>"
-              echo "<ul><li>Pottery shop grid world (goal misgeneralisation)<span class=\"sep\">·</span><a href=\"./play.html\">🎮 Play in your browser</a></li></ul>"
+              echo "<h3>Interactive demo</h3><ul>"
+              echo "<li>Pottery shop grid world<span class=\"sep\">·</span><a href=\"./play.html\">🎮 Play in your browser</a></li>"
+              echo "</ul>"
             fi
+
+            # ===== D.3 Solomonoff Induction and AIXI =====
+            echo "<h2>D.3 Solomonoff Induction and AIXI</h2>"
+            echo "<h3>Worksheets</h3><ul>"
+            worksheet_li solomonoff-all
+            worksheet_li aixi-worksheet
+            echo "</ul>"
+            echo "<h3>Slides</h3><ul>"
+            slide_li iliad-david1-slides
+            echo "</ul>"
 
             echo "<p class=\"meta\">Built ${BUILT} from commit <code>${SHA_SHORT}</code> · source: <a href=\"https://github.com/${REPO}\">github.com/${REPO}</a></p>"
             echo "</body></html>"
