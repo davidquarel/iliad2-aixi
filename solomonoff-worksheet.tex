@@ -96,7 +96,7 @@ April 2026 \hfill Leon Lang\\
 \section*{Goal and Roadmap}
 
 \textbf{A recipe for prediction:} Solomonoff induction is an attempt to mathematically
-formalize the \href{https://en.wikipedia.org/wiki/Problem_of_induction}\emph{problem of induction}
+formalize the \href{https://en.wikipedia.org/wiki/Problem_of_induction}{\emph{problem of induction}}
 from philosophy: How to make predictions about the future based on past observations?
 
 We formalize this as sequence prediction: There is some true environment $\mu$ that generates
@@ -385,7 +385,7 @@ For $0 \leq p \leq 1$ and $0 < q < 1$ we have
 \noindent
 \textbf{[15]} Prove \cref{lem:pinskers_binary_inequality}.
 
-\textit{Hint:} Define a function $f(x)$ such that the right-hand side can be written as $f(p) - f(q)$ (try seperating the LHS into terms with and without $q$). Then use the fundamental theorem of calculus, $f(p) - f(q) = \int_q^p f'(x) \, dx$, together with the inequality $x(1-x) \leq 1/4$ for $0 \leq x \leq 1$, to obtain the result.
+\textit{Hint:} Define a function $f(x)$ such that the right-hand side can be written as $f(p) - f(q)$ (try separating the LHS into terms with and without $q$). Then use the fundamental theorem of calculus, $f(p) - f(q) = \int_q^p f'(x) \, dx$, together with the inequality $x(1-x) \leq 1/4$ for $0 \leq x \leq 1$, to obtain the result.
 
 \begin{solution}
 Define $f(x) := p \ln x + (1-p) \ln (1-x)$, so that
