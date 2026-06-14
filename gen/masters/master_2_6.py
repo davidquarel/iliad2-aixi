@@ -164,7 +164,7 @@ ipython.run_line_magic("autoreload", "2")
 #         sys.path.insert(0, "/content/iliad")  # so `import part6_goalmisgen...` resolves
 #     os.chdir("/content/iliad")
 #     from google.colab import output
-#     output.enable_custom_widget_manager()  # for the interactive environment player
+#     output.enable_custom_widget_manager()  # for the live plotly training plots (LiveSubplots)
 
 # ! CELL TYPE: code
 # ! FILTERS: []
@@ -199,7 +199,6 @@ from part6_goalmisgen.evaluation import RewardFunction, compute_return, evaluate
 from part6_goalmisgen.potteryshop import Action, Environment, Item, State, collect_rollout
 from part6_goalmisgen.ppo import ppo_train_step, ppo_train_step_multienv
 from part6_goalmisgen.util import (
-    InteractivePlayer,
     LiveSubplots,
     display_envs,
     display_rollout,
@@ -324,9 +323,9 @@ So much for defining the data types involved, the actual implementation of the e
 
 We encourage you to skim the implementation in `part6_goalmisgen/potteryshop.py` --- the environment dynamics are about 60 lines of (heavily commented) tensor operations, and reading them is a good way to make sure you understand exactly how the world works before you start designing reward functions for it.
 
-TODO:  add a link to play a demo of the environment
+You can **[play the pottery shop in your browser](https://davidquarel.github.io/iliad2-aixi/play.html)** to get a feel for the dynamics (move the robot around, smash urns, pick up shards and bin them) before you start designing reward functions for it.
 
-Below we instantiate an instance of the pottery shop environment for you to play with.
+Below we instantiate an instance of the pottery shop environment.
 We can see the `Environment` object requires the following arguments:
 
 * `init_robot_pos`: the initial position of the robot
@@ -359,7 +358,6 @@ env = Environment(
 
 if MAIN:
     tests.test_env(env)
-    InteractivePlayer(env)
 
 # ! CELL TYPE: markdown
 # ! FILTERS: []

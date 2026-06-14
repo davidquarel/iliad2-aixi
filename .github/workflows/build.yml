@@ -199,6 +199,8 @@ jobs:
         run: |
           mkdir -p public
           find artifacts/ -name '*.pdf' -exec cp {} public/ \;
+          # static interactive demo (self-contained single HTML file, served as-is)
+          [ -e play.html ] && cp play.html public/
           touch public/.nojekyll
           ls -la public/
 
@@ -286,6 +288,12 @@ jobs:
             echo "<li>Vanilla Policy Gradient (CartPole)<span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_solutions.ipynb\">✅ Solutions</a></li>"
             echo "<li>Goal Misgeneralisation &amp; Specification Gaming<span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_solutions.ipynb\">✅ Solutions</a></li>"
             echo "</ul>"
+
+            # --- Interactive demo: the in-browser pottery shop grid world ---
+            if [ -e public/play.html ]; then
+              echo "<h2>Interactive Demo</h2>"
+              echo "<ul><li>Pottery shop grid world (goal misgeneralisation)<span class=\"sep\">·</span><a href=\"./play.html\">🎮 Play in your browser</a></li></ul>"
+            fi
 
             echo "<p class=\"meta\">Built ${BUILT} from commit <code>${SHA_SHORT}</code> · source: <a href=\"https://github.com/${REPO}\">github.com/${REPO}</a></p>"
             echo "</body></html>"
