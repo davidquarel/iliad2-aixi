@@ -58,7 +58,12 @@ jobs:
           compiler: pdflatex
           args: -interaction=nonstopmode -halt-on-error -file-line-error
           post_compile: |
-            bibtex ${{ matrix.file }}-${{ matrix.mode }}
+            # Only run bibtex if this document actually cites anything; otherwise
+            # bibtex aborts with "no \bibdata command" (exit 2) and fails the build.
+            # (e.g. the citation-free solomonoff sheet.)
+            if grep -qF '\citation' "${{ matrix.file }}-${{ matrix.mode }}.aux"; then
+              bibtex ${{ matrix.file }}-${{ matrix.mode }}
+            fi
             pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
             pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
 
@@ -103,7 +108,12 @@ jobs:
           compiler: pdflatex
           args: -interaction=nonstopmode -halt-on-error -file-line-error
           post_compile: |
-            bibtex ${{ matrix.file }}-${{ matrix.mode }}
+            # Only run bibtex if this deck actually cites anything; otherwise bibtex
+            # aborts with "no \bibdata command" (exit 2) and fails the build (e.g. the
+            # citation-free vpg-slides deck; goalmisgen-slides DOES cite, so it runs).
+            if grep -qF '\citation' "${{ matrix.file }}-${{ matrix.mode }}.aux"; then
+              bibtex ${{ matrix.file }}-${{ matrix.mode }}
+            fi
             pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
             pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
 
