@@ -96,7 +96,7 @@ Much of this material is drawn from \href{https://www.hutter1.net/publ/uaibook2.
 
 \medskip
 \noindent
-\textbf{Difficulty ratings.} Each subproblem is tagged with a rating in square brackets using Knuth's scale \cite{Knuth:73a}: roughly, \textbf{[00]}~trivial, \textbf{[10]}~15--minute pencil-and-paper, \textbf{[20]}~1--2~hours, \textbf{[30]}~several hours to a day, \textbf{[40]}~a significant research result. Intermediate values are possible. See \cref{sec:appendix_difficulty} for the full scale. Problems marked \textbf{($\ast$)} are enrichment: off the critical path to the main goals and safely skippable on a first pass.
+\textbf{Difficulty ratings.} Each subproblem is tagged with a rating in square brackets using Knuth's scale \cite{Knuth:73a}: roughly, \textbf{[00]}~trivial, \textbf{[10]}~15--minute pencil-and-paper, \textbf{[20]}~1--2~hours, \textbf{[30]}~several hours to a day, \textbf{[40]}~a significant research result. Intermediate values are possible. See \cref{sec:appendix_difficulty} for the full scale. Problems marked \textbf{($\ast$)} are less interesting/insightful and while the result may be used later, I would recommend skipping them on a first pass.
 
 %===================================
 \section*{Goal and Roadmap}
@@ -500,47 +500,72 @@ Combining: $\sup_\pi \sum_a \pi(a) Q(a) = Q(a^*) = \max_{a'} Q(a')$, attained by
 \mysubsection{2}{[15] (Bellman equation) \label{prob:bellman_finite}
 Show that for finite $m$ and $t \leq m$:}
 \[
-    V_\nu^{\pi,m}(\aes_{<t}) ~=~ \sum_{a'_t} \pi(a'_t \mid \aes_{<t}) \sum_{e'_t} \nu(e'_t \mid \aes_{<t} a'_t) \Big[(1-\gamma)\, r'_t ~+~ \gamma\, V_\nu^{\pi,m}(\aes_{<t}\, a'_t\, e'_t)\Big],
+    V_\nu^{\pi,m}(\aes_{<t}) ~=~ \sum_{\aes'_t} \nu^\pi(\aes'_t \mid \aes_{<t}) \Big[(1-\gamma)\, r'_t ~+~ \gamma\, V_\nu^{\pi,m}(\aes_{<t}\, \aes'_t)\Big],
 \]
-where $\aes_{<t}\, a'_t\, e'_t$ denotes the history $\aes_{<t}$ extended by action $a'_t$ and percept $e'_t$.
+% where $\aes'_t = a'_t e'_t$ is a single action--percept step, $\nu^\pi(\aes'_t \mid \aes_{<t}) = \pi(a'_t \mid \aes_{<t})\, \nu(e'_t \mid \aes_{<t} a'_t)$, and $\aes_{<t}\, \aes'_t$ denotes the history $\aes_{<t}$ extended by that step.
 
-\textit{Hint:} Split off the first step from the value function definition. Factor out $r'_t$ using $\sum_{\aes'_{t+1:m}} \nu^\pi(\cdots) = 1$.
+\textit{Hint:} Use the general chain rule (\Cref{prob:chain_rule_nupi}) to peel off the
+\emph{first} step,
+\[
+    \nu^\pi(\aes_{t:m} \mid \aes_{<t})
+    ~=~ \nu^\pi(\aes_t \mid \aes_{<t}) \cdot \nu^\pi(\aes_{t+1:m} \mid \aes_{1:t}).
+\]
+Break up the sum $\sum_{\aes_{t:m}} = \sum_{\aes_t} \sum_{\aes_{t+1:m}}$,
+and factor out $r'_t$ using $\sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes) = 1$
+for any history $\aes$.
 
 \begin{solution}
 \emph{Step 1: Factor the future.}
-Write $\aes'_{t:m} = a'_t\, e'_t\, \aes'_{t+1:m}$:
-$\nu^\pi(\aes'_{t:m} \mid \aes_{<t}) = \pi(a'_t \mid \aes_{<t})\, \nu(e'_t \mid \aes_{<t} a'_t) \cdot \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, a'_t\, e'_t)$.
+Write $\aes'_{t:m} = \aes'_t\, \aes'_{t+1:m}$:
+$\nu^\pi(\aes'_{t:m} \mid \aes_{<t}) = \nu^\pi(\aes'_t \mid \aes_{<t}) \cdot \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t)$.
 
 \emph{Step 2: Split the reward sum.}
 $\sum_{k=t}^{m} \gamma^{k-t} r'_k = r'_t + \gamma \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k$.
 
-\emph{Step 3: Substitute and rearrange.}
+\emph{Step 3: Substitute into the definition of $V_\nu^{\pi,m}(\aes_{<t})$.}
 \begin{align*}
     V_\nu^{\pi,m}(\aes_{<t})
-    ~&=~ (1-\gamma) \sum_{a'_t} \pi(a'_t \mid \aes_{<t}) \sum_{e'_t} \nu(e'_t \mid \aes_{<t} a'_t) \\
-    &\qquad \times \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, a'_t\, e'_t) \left[ r'_t + \gamma \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \right].
+    ~&=~ (1-\gamma) \sum_{\aes'_t} \nu^\pi(\aes'_t \mid \aes_{<t}) \\
+    &\qquad \times \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \left[ r'_t + \gamma \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \right].
 \end{align*}
 
-\emph{Step 4: Factor out $r'_t$.} Since $r'_t$ doesn't depend on $\aes'_{t+1:m}$, and $\sum_{\aes'_{t+1:m}} \nu^\pi(\cdots) = 1$:
+Consider the inner term $\sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) 
+\left[ r'_t + \gamma \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \right]$. 
+We can expand as:
+\begin{align*}
+&= \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) r'_t 
++ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \\
+&= r'_t \cancel{\sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t)}  
++ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \\
+&= r'_t
++ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k
+\end{align*}
+as $r'_t$ doesn't depend on $\aes'_{t+1:m}$, and $\sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) = 1$.
+Inserting this above, we obtain:
 \begin{align*}
     V_\nu^{\pi,m}(\aes_{<t})
-    ~=~ \sum_{a'_t} \pi(a'_t \mid \aes_{<t}) &\sum_{e'_t} \nu(e'_t \mid \aes_{<t} a'_t) \bigg[ (1-\gamma)\, r'_t \\
-    &+~ \gamma\, \underbrace{(1-\gamma) \sum_{\aes'_{t+1:m}} \nu^\pi(\cdots) \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k}_{=\; V_\nu^{\pi,m}(\aes_{<t}\, a'_t\, e'_t)} \bigg].
+    ~&=~ \sum_{\aes'_t} \nu^\pi(\aes'_t \mid \aes_{<t}) \bigg[ (1-\gamma)\, r'_t \\
+    &\qquad +~ \gamma\, \underbrace{(1-\gamma) \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t)\sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k}_{=\; V_\nu^{\pi,m}(\aes_{<t}\, \aes'_t)} \bigg].
 \end{align*}
 \end{solution}
 
-\mysubsection{3}{[20] (Backward induction) \label{prob:backward_induction}
+\mysubsection{3}{[20] (*) (Backward induction) \label{prob:backward_induction}
 Using the Bellman equation from \cref{prob:bellman_finite} and \cref{prob:sup_eq_max}, show by backward induction on $t = m, m-1, \ldots, 1$ that for each finite $m$, a deterministic optimal policy exists.}
 
 \begin{solution}
 We induct on $t = m, m-1, \ldots, 1$, showing that for every history $\aes_{<t}$, a deterministic policy achieves $V_\nu^{*,m}(\aes_{<t})$.
 
-\emph{Base case ($t = m$):} The Bellman equation gives $V_\nu^{\pi,m}(\aes_{<m}) = (1-\gamma) \sum_{a'_m} \pi(a'_m \mid \aes_{<m}) \sum_{e'_m} \nu(e'_m \mid \aes_{<m} a'_m)\, r'_m$.
+\emph{Base case ($t = m$):} At $t = m$ the continuation term vanishes (the value from time $m+1$ is an empty sum), so the Bellman equation gives $V_\nu^{\pi,m}(\aes_{<m}) = (1-\gamma) \sum_{\aes'_m} \nu^\pi(\aes'_m \mid \aes_{<m})\, r'_m$.
+Splitting the step $\aes'_m = a'_m e'_m$ via $\nu^\pi(\aes'_m \mid \aes_{<m}) = \pi(a'_m \mid \aes_{<m})\, \nu(e'_m \mid \aes_{<m} a'_m)$ gives $V_\nu^{\pi,m}(\aes_{<m}) = (1-\gamma) \sum_{a'_m} \pi(a'_m \mid \aes_{<m}) \sum_{e'_m} \nu(e'_m \mid \aes_{<m} a'_m)\, r'_m$.
 This has the form $\sum_a \pi(a) Q(a)$ with $Q(a) = (1-\gamma)\sum_{e'_m} \nu(e'_m \mid \aes_{<m} a)\, r'_m$, which is independent of $\pi$.
 By \cref{prob:sup_eq_max}, the supremum over $\pi$ is $\max_a Q(a)$, attained by the deterministic policy playing $a^* \in \argmax_a Q(a)$.
 
 \emph{Inductive step:} Suppose that for every history of length $t$, there exists a deterministic policy $\pi^*_{t+1}$ achieving $V_\nu^{\pi^*_{t+1},m} = V_\nu^{*,m}$ from time $t+1$ onwards.
-Substituting this optimal continuation into the Bellman equation from \cref{prob:bellman_finite}:
+Substituting this optimal continuation into the Bellman equation from \cref{prob:bellman_finite} gives
+\[
+    V_\nu^{\pi,m}(\aes_{<t}) ~=~ \sum_{\aes'_t} \nu^\pi(\aes'_t \mid \aes_{<t}) \big[(1-\gamma)\, r'_t + \gamma\, V_\nu^{*,m}(\aes_{<t}\, \aes'_t)\big].
+\]
+Splitting the step $\aes'_t = a'_t e'_t$ via $\nu^\pi(\aes'_t \mid \aes_{<t}) = \pi(a'_t \mid \aes_{<t})\, \nu(e'_t \mid \aes_{<t} a'_t)$ and grouping the percept sum into the action weight:
 \[
     V_\nu^{\pi,m}(\aes_{<t}) ~=~ \sum_{a'_t} \pi(a'_t \mid \aes_{<t})\, Q(a'_t),
 \]
@@ -556,12 +581,16 @@ Using \cref{prob:backward_induction}, show that for finite $m$:}
 
 \begin{solution}
 By \cref{prob:backward_induction}, a deterministic optimal policy $\pi^*_\nu$ exists with $V_\nu^{\pi^*_\nu,m} = V_\nu^{*,m}$.
-Substituting $\pi = \pi^*_\nu$ into the Bellman equation from \cref{prob:bellman_finite}:
+Substituting $\pi = \pi^*_\nu$ into the Bellman equation from \cref{prob:bellman_finite} (using $V_\nu^{\pi^*_\nu,m} = V_\nu^{*,m}$ on both sides):
 \[
     V_\nu^{*,m}(\aes_{<t})
-    ~=~ \sum_{a'_t} \pi^*_\nu(a'_t \mid \aes_{<t}) \sum_{e'_t} \nu(e'_t \mid \aes_{<t} a'_t) \Big[(1-\gamma)\, r'_t + \gamma\, V_\nu^{*,m}(\aes_{<t}\, a'_t\, e'_t)\Big],
+    ~=~ \sum_{\aes'_t} \nu^{\pi^*_\nu}(\aes'_t \mid \aes_{<t}) \Big[(1-\gamma)\, r'_t + \gamma\, V_\nu^{*,m}(\aes_{<t}\, \aes'_t)\Big].
 \]
-where we used $V_\nu^{\pi^*_\nu,m} = V_\nu^{*,m}$ on both sides.
+Splitting the step $\aes'_t = a'_t e'_t$ via $\nu^{\pi^*_\nu}(\aes'_t \mid \aes_{<t}) = \pi^*_\nu(a'_t \mid \aes_{<t})\, \nu(e'_t \mid \aes_{<t} a'_t)$:
+\[
+    V_\nu^{*,m}(\aes_{<t})
+    ~=~ \sum_{a'_t} \pi^*_\nu(a'_t \mid \aes_{<t}) \sum_{e'_t} \nu(e'_t \mid \aes_{<t} a'_t) \Big[(1-\gamma)\, r'_t + \gamma\, V_\nu^{*,m}(\aes_{<t}\, a'_t\, e'_t)\Big].
+\]
 Since $\pi^*_\nu$ is deterministic, let $a^*_t$ denote the unique action with $\pi^*_\nu(a^*_t \mid \aes_{<t}) = 1$. Then:
 \[
     V_\nu^{*,m}(\aes_{<t})
