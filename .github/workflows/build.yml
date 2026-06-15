@@ -242,8 +242,10 @@ jobs:
             h2 { font-size: 1.25rem; margin-top: 2.2rem; color: #24292e;
                  border-bottom: 1px solid #eaecef; padding-bottom: .2rem; }
             h3 { font-size: 1rem; margin: 1.1rem 0 .2rem; color: #57606a; font-weight: 600; }
-            ul { list-style: none; padding-left: 0; }
-            li { padding: .35rem 0; }
+            table.r { width: 100%; border-collapse: collapse; margin: .2rem 0 .9rem; }
+            table.r td { padding: .35rem 0; border-bottom: 1px solid #f0f2f4; vertical-align: baseline; }
+            td.name { text-align: left; }
+            td.links { text-align: right; white-space: nowrap; padding-left: 1.2rem; }
             a { color: #0366d6; text-decoration: none; }
             a:hover { text-decoration: underline; }
             .sep { color: #d1d5da; margin: 0 .4rem; }
@@ -257,50 +259,50 @@ jobs:
           <h1>Iliad Intensive</h1>
           HEAD
 
-            # helper: emit a slides <li> (present + handout) for a base name
-            slide_li() {
+            # emit one table row: $1 = name (left), $2 = links blob (right)
+            row() { echo "<tr><td class=\"name\">$1</td><td class=\"links\">$2</td></tr>"; }
+            # slides row (present + handout) for a deck base name; nothing if its PDF is absent
+            slide_row() {
               [ -e "public/$1-present.pdf" ] || return 0
-              echo "<li>$(title_of "$1")"
-              echo "<span class=\"sep\">·</span><a href=\"./$1-present.pdf\">🎬 Slides (with pauses)</a>"
-              [ -e "public/$1-handout.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./$1-handout.pdf\">📄 Handout (no pauses)</a>"
-              echo "</li>"
+              s="<a href=\"./$1-present.pdf\">🎬 Slides</a>"
+              [ -e "public/$1-handout.pdf" ] && s="$s<span class=\"sep\">·</span><a href=\"./$1-handout.pdf\">📄 Handout</a>"
+              row "$(title_of "$1")" "$s"
             }
-            # helper: emit a worksheet <li> (no-solutions + solutions) for a base name
-            worksheet_li() {
+            # worksheet row (no-solutions + solutions) for a base name
+            worksheet_row() {
               [ -e "public/$1-nosol.pdf" ] || return 0
-              echo "<li>$(title_of "$1")"
-              echo "<span class=\"sep\">·</span><a href=\"./$1-nosol.pdf\">📄 Worksheet</a>"
-              [ -e "public/$1-sol.pdf" ] && echo "<span class=\"sep\">·</span><a href=\"./$1-sol.pdf\">✅ With solutions</a>"
-              echo "</li>"
+              s="<a href=\"./$1-nosol.pdf\">📄 Worksheet</a>"
+              [ -e "public/$1-sol.pdf" ] && s="$s<span class=\"sep\">·</span><a href=\"./$1-sol.pdf\">✅ With solutions</a>"
+              row "$(title_of "$1")" "$s"
             }
 
             COLAB="https://colab.research.google.com/github/${REPO}/blob/notebooks"
 
             # ===== D.2 Policy Gradients and Misgeneralization =====
             echo "<h2>D.2 Policy Gradients and Misgeneralization</h2>"
-            echo "<h3>Slides</h3><ul>"
-            slide_li vpg-slides
-            slide_li goalmisgen-slides
-            echo "</ul>"
-            echo "<h3>Interactive exercises (Colab)</h3><ul>"
-            echo "<li>Vanilla Policy Gradient (CartPole)<span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_solutions.ipynb\">✅ Solutions</a></li>"
-            echo "<li>Goal Misgeneralisation &amp; Specification Gaming<span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_solutions.ipynb\">✅ Solutions</a></li>"
-            echo "</ul>"
+            echo "<h3>Slides</h3><table class=\"r\">"
+            slide_row vpg-slides
+            slide_row goalmisgen-slides
+            echo "</table>"
+            echo "<h3>Interactive exercises (Colab)</h3><table class=\"r\">"
+            row "Vanilla Policy Gradient (CartPole)" "<a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part_vpg/2.2_Vanilla_Policy_Gradient_solutions.ipynb\">✅ Solutions</a>"
+            row "Goal Misgeneralisation &amp; Specification Gaming" "<a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_exercises.ipynb\">📓 Exercises</a><span class=\"sep\">·</span><a href=\"${COLAB}/part6_goalmisgen/2.6_Specification_Gaming_and_Goal_Misgeneralisation_solutions.ipynb\">✅ Solutions</a>"
+            echo "</table>"
             if [ -e public/play.html ]; then
-              echo "<h3>Interactive demo</h3><ul>"
-              echo "<li>Pottery shop grid world<span class=\"sep\">·</span><a href=\"./play.html\">🎮 Play in your browser</a></li>"
-              echo "</ul>"
+              echo "<h3>Interactive demo</h3><table class=\"r\">"
+              row "Pottery shop grid world" "<a href=\"./play.html\">🎮 Play in your browser</a>"
+              echo "</table>"
             fi
 
             # ===== D.3 Solomonoff Induction and AIXI =====
             echo "<h2>D.3 Solomonoff Induction and AIXI</h2>"
-            echo "<h3>Worksheets</h3><ul>"
-            worksheet_li solomonoff-all
-            worksheet_li aixi-worksheet
-            echo "</ul>"
-            echo "<h3>Slides</h3><ul>"
-            slide_li iliad-david1-slides
-            echo "</ul>"
+            echo "<h3>Slides</h3><table class=\"r\">"
+            slide_row iliad-david1-slides
+            echo "</table>"
+            echo "<h3>Worksheets</h3><table class=\"r\">"
+            worksheet_row solomonoff-all
+            worksheet_row aixi-worksheet
+            echo "</table>"
 
             echo "<p class=\"meta\">Built ${BUILT} from commit <code>${SHA_SHORT}</code> · source: <a href=\"https://github.com/${REPO}\">github.com/${REPO}</a></p>"
             echo "</body></html>"
