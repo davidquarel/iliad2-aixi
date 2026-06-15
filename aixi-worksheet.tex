@@ -321,8 +321,11 @@ Note: for a deterministic policy, \cref{prob:det_interaction} simplifies this fu
 Let $\cM = \{\nu_1, \nu_2, \ldots\}$ be a countable class of environments with prior weights $w_\nu > 0$ satisfying $\sum_{\nu \in \cM} w_\nu \leq 1$.
 We assume $\mu \in \cM$.
 
-The \textbf{Bayesian mixture} is $\xi(\aes_{1:t}) := \sum_{\nu \in \cM} w_\nu\, \nu(\aes_{1:t})$.
-Its one-step predictive distribution is
+The \textbf{Bayesian mixture} $\xi$ is defined as 
+$$
+\xi(\aes_{1:t}) := \sum_{\nu \in \cM} w_\nu\, \nu(\aes_{1:t}) \quad \text{ and } \quad \xi(e_t \mid \aes_{<t} a_t) := \xi(\aes_{1:t}) / \xi(\aes_{<t}).
+$$
+One can show that the one-step predictive distribution can be written as
 \[
     \xi(e_t \mid \aes_{<t} a_t)
     ~=~ \sum_{\nu \in \cM} w(\nu \mid \aes_{<t})\, \nu(e_t \mid \aes_{<t} a_t),
