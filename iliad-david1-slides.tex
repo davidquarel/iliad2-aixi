@@ -52,6 +52,8 @@
 \newcommand{\aes}{{\text{\ae}}}            % action--percept history symbol
 \newcommand{\red}[1]{\textcolor{red}{#1}}
 \newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\green}[1]{\textcolor{green!55!black}{#1}}
+\newcommand{\purple}[1]{\textcolor{violet}{#1}}
 \newcommand{\iver}[1]{\llbracket #1 \rrbracket}
 
 %===============================================================================
@@ -103,7 +105,8 @@
     \item A \textbf{predictor} $P$ sees the past $x_{<t}$ and outputs a distribution
     $P(\cdot \mid x_{<t})$ over the next bit.
     \pause
-    \item \textbf{Quality measure:} total $\mu$-expected squared prediction error
+    \item \textbf{Quality measure:} total $\mu$-
+    cted squared prediction error
     \[
     S_\infty^\mu := \sum_{t=1}^{\infty} \sum_{x_{<t}} \mu(x_{<t})
         \sum_{x_t \in \B} \big( P(x_t \mid x_{<t}) - \mu(x_t \mid x_{<t}) \big)^2.
@@ -284,7 +287,24 @@ The \textbf{optimal value} is $V_\nu^{*,m}(\aes_{<t}) := \sup_\pi V_\nu^{\pi,m}(
 \begin{frame}{AIXI}
 \begin{block}{AIXI}
 $\pi_\xi^*$ with $\cM=$ all lower-semicomputable environments and prior $w_\nu = 2^{-K(\nu)}$.
-\emph{The Bayes-optimal agent under Occam's razor.}
+Write $\xi_U$ for $\xi$ with this choice of $\cM$ and $w_\nu$, so \text{AIXI} = $\pi_{\xi_U}^*$.
+\end{block}
+\textbf{Intuition:} \emph{The Bayes-optimal agent with prior according to Occam's razor: Act optimally according
+to environments that you believe to be in, assuming the simplest environments consistant with
+observations are more likely to be true.}
+\pause
+\begin{block}{AIXI, explicitly}
+\red{$\max$ over actions}, \blue{$\sum$ over percepts}, choosing actions that maximise the \green{$\xi$-weighted} \purple{discounted reward}:
+\[
+\resizebox{\linewidth}{!}{$\displaystyle
+    a_t = \red{\argmax_{a_t}}\lim_{m\to\infty}
+        \blue{\sum_{e_t}}\red{\max_{a_{t+1}}}\blue{\sum_{e_{t+1}}}\!\cdots\!
+      \red{\max_{a_m}}\blue{\sum_{e_m}} \,
+      \green{\xi(e_{t:m}\mid \aes_{<t}\,a_{t:m})} \, 
+      \purple{\Big(\sum_{k=t}^m 
+        \gamma_k r_k\Big)} 
+$}
+\]
 \end{block}
 \end{frame}
 
@@ -306,23 +326,22 @@ $\pi_\xi^*$ with $\cM=$ all lower-semicomputable environments and prior $w_\nu =
 \begin{frame}{The three main AIXI results}
 \begin{center}
 \begin{tikzpicture}[
-    node distance=6mm and 10mm,
-    box/.style={draw, rounded corners, align=center, font=\footnotesize, inner sep=4pt, minimum height=8mm},
+    node distance=3mm and 28mm,
+    box/.style={draw, rounded corners, align=center, font=\normalsize, inner sep=7pt, minimum height=14mm, minimum width=34mm},
     main/.style={box, thick, double, fill=blue!5},
-    arr/.style={-{Stealth}, semithick}
+    arr/.style={-{Stealth}, line width=0.8pt}
 ]
-\node[box] (f) {\textbf{Foundations} (P0--4)\\ measures, mixture,\\ optimal policies,\\ dominance, linearity};
-\node[main, above right=3mm and 14mm of f] (r1) {\textbf{On-policy convergence}\\ $V_\xi^\pi - V_\mu^\pi \to 0$};
-\node[main, right=14mm of f] (r2) {\textbf{Can't be fooled}\\ good env $\Rightarrow$ good value};
-\node[main, below right=3mm and 14mm of f] (r3) {\textbf{Self-optimizing}\\ $\pi_\xi^*$ acts as well\\ as if it knew $\mu$};
+\node[box] (f) {\textbf{Foundations} \\ measures, mixture,\\ optimal policies,\\ dominance, linearity};
+\node[main, above right=3mm and 28mm of f] (r1) {\textbf{On-policy convergence}\\ $V_\xi^\pi - V_\mu^\pi \to 0$};
+\node[main, right=28mm of f] (r2) {\textbf{Can't be fooled}\\ good env $\Rightarrow$ good value};
+\node[main, below right=3mm and 28mm of f] (r3) {\textbf{Self-optimizing}\\ $\pi_\xi^*$ acts as well\\ as if it knew $\mu$};
 \draw[arr] (f) -- (r1);
 \draw[arr] (f) -- (r2);
 \draw[arr] (f) -- (r3);
 \end{tikzpicture}
 \end{center}
-\begin{itemize}\footnotesize
+\begin{itemize}
     \item All three: the Bayesian agent inherits the guarantees it would have if it knew the truth.
-    \item Result~3 needs heavier machinery (martingales, change of measure), so probably a stretch goal.
 \end{itemize}
 \end{frame}
 

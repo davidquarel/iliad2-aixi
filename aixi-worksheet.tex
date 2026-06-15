@@ -813,11 +813,10 @@ Therefore:
 \]
 \end{solution}
 
-
 %===================================
 \section*{On-Policy Value Convergence}
 
-Problems 5--7 prove the first two main results: on-policy value convergence (Problem~6), and that AIXI can't be fooled in deterministic environments (Problem~7).
+The following problems prove the first two main results: on-policy value convergence (Problem~6), and that AIXI can't be fooled in deterministic environments (Problem~7).
 The path to the self-optimizing property (advanced stretch goal) resumes at Problem~8.
 
 %===================================
@@ -1445,6 +1444,61 @@ This completes the proof of \cref{thm:selfopt}. \qedhere
 
 \textit{Remark.} We do not need to know which policy $\tilde\pi$ is self-optimizing, or whether it is computable. Mere existence suffices.
 For countable $\cM$, this final step is harder: a countable sum of $\mu^\pi$-a.s.-convergent sequences need not converge $\mu^\pi$-a.s.\ The general proof uses a ``convergence of mixture tails'' argument \cite[Lem.~5.28]{Hutter:04uaibook}.
+
+% ===================================% 
+% TODO Solutions need detailed rewriting
+
+\section{The Expectimax Form of AIXI}\label{prob:expectimax}
+
+We have specified AIXI only implicitly, as the Bayes-optimal policy $\pi_\xi^*$ (\cref{def:value}).
+We now unroll this definition into the explicit \textbf{expectimax} expression: an alternating sequence of maximizations over actions and $\xi$-expectations over percepts.
+
+\mysubsection{1}{[20] (Expectimax form of AIXI)\label{prob:expectimax_derivation}
+By iterating the finite-horizon Bellman optimality equation (\cref{prob:bellman_opt}) for the mixture $\nu = \xi$, show that
+\[
+\resizebox{\textwidth}{!}{$\displaystyle
+    V_\xi^{*,m}(\aes_{<t})
+    ~=~ \max_{a_t} \sum_{e_t} \xi(e_t \mid \aes_{<t} a_t)\, \max_{a_{t+1}} \sum_{e_{t+1}} \xi(e_{t+1} \mid \aes_{<t+1} a_{t+1}) \cdots
+    \max_{a_m} \sum_{e_m} \xi(e_m \mid \aes_{<m} a_m) \left[(1-\gamma)\sum_{k=t}^{m} \gamma^{k-t} r_k\right]
+$}
+\]
+and hence, collecting the percept factors with the chain rule (\cref{prob:chain_rule}) and taking $m \to \infty$ (\cref{prob:inf_horizon,prob:inf_opt_policy}), that AIXI selects the action
+\[
+\resizebox{\textwidth}{!}{$\displaystyle
+    a_t ~=~ \pi_\xi^*(\aes_{<t})
+    ~\in~ \argmax_{a_t} \lim_{m\to\infty} \sum_{e_t} \max_{a_{t+1}} \sum_{e_{t+1}} \cdots \max_{a_m} \sum_{e_m}
+    \left[\sum_{k=t}^{m} \gamma^{k-t} r_k\right] \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m})
+$}
+\]
+}
+
+\textit{Hint:} Substitute the Bellman optimality equation into itself, peeling off one $\max_{a_k} \sum_{e_k} \xi(e_k \mid \cdots)$ per step down to $k = m$, where the continuation value vanishes. The leftover reward term $(1-\gamma) r_t$ is constant in the deeper variables; carry it inward using $\sum_{e_k} \xi(e_k \mid \aes_{<k} a_k) = 1$ and $c + \max(\cdot) = \max(c + \cdot)$. You may wish to prove by backwards induction on $t$ from $m$ to $1$.
+
+\begin{solution}
+Unroll the Bellman optimality equation (\cref{prob:bellman_opt}) for $\nu = \xi$,
+\[
+    V_\xi^{*,m}(\aes_{<t}) ~=~ \max_{a_t} \sum_{e_t} \xi(e_t \mid \aes_{<t} a_t) \big[(1-\gamma)\, r_t + \gamma\, V_\xi^{*,m}(\aes_{1:t})\big],
+\]
+into itself: substitute the same identity for the continuation $V_\xi^{*,m}(\aes_{1:t})$, then for \emph{its} continuation, and so on down to time $m$, where $V_\xi^{*,m}(\aes_{1:m}) = 0$ (no reward accrues past the horizon). This produces the nested expression of the first display, with two simplifications:
+\begin{itemize}\itemsep=2pt
+    \item \emph{Discounts.} Each level multiplies the continuation by $\gamma$, so reward $r_k$ enters with weight $(1-\gamma)\gamma^{k-t}$.
+    \item \emph{Constants pass through.} A term independent of the deeper variables, such as $(1-\gamma) r_t$, can be carried inside the remaining $\max/\sum$ layers using $\sum_{e_k} \xi(e_k \mid \aes_{<k} a_k) = 1$ and $c + \max(\cdot) = \max(c + \cdot)$; this lets every reward share the same percept factors.
+\end{itemize}
+Collecting those factors by the chain rule (\cref{prob:chain_rule}, iterated),
+\[
+    \prod_{k=t}^{m} \xi(e_k \mid \aes_{<k} a_k) ~=~ \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m}).
+\]
+Finally, a Bayes-optimal action maximizes the one-step expression for $V_\xi^* = \lim_{m\to\infty} V_\xi^{*,m}$ (\cref{prob:inf_opt_policy,prob:inf_horizon}); peeling the outer $\max_{a_t}$ off as an $\argmax$ and dropping the positive constant $(1-\gamma)$ (which does not move the maximizer) gives the stated action.
+\end{solution}
+
+
+
+
+
+
+
+
+
 
 %===================================
 \clearpage
