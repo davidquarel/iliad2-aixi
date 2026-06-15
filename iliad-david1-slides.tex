@@ -255,18 +255,33 @@ Run $\pi$ inside $\nu$ and multiply along the history:
 \end{frame}
 
 \begin{frame}{Value, optimality, and AIXI}
-\begin{block}{Value function (geometric discount $\gamma$)}
-\[
-V_\nu^{\pi}(\aes_{<t}) := (1-\gamma)\,\Ex_\nu^\pi\!\Big[\textstyle\sum_{k\geq t} \gamma^{k-t} r_k \;\Big|\; \aes_{<t}\Big] \in [0,1].
-\]
+\begin{block}{Value function (assuming geometric discount $\gamma$)}
+% \[
+% V_\nu^{\pi}(\aes_{<t}) := (1-\gamma)\,\Ex_\nu^\pi\!\Big[\textstyle\sum_{k\geq t} \gamma^{k-t} r_k \;\Big|\; \aes_{<t}\Big] \in [0,1].
+% \]
+\vspace{-0.3cm}
+\begin{align*}
+V_\nu^{\pi,m}(\aes_{<t})
+~&=~ (1-\gamma)\, \underset{\aes_{t:m} \sim \nu^\pi(\cdot \mid \aes_{<t})}{\Ex}
+\!\left[\sum_{k=t}^{m} \gamma^{k-t}\, r_k \right] \\
+~&=~ (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^{m} \gamma^{k-t}\, r_k 
+\end{align*}
 \end{block}
 \pause
-\begin{itemize}
-    \item \textbf{Optimal value} $V_\nu^* := \sup_\pi V_\nu^\pi$; an optimal policy $\pi_\nu^*$ attains it
-    (exists, via Bellman + backward induction).
-    \item \textbf{Bayes-optimal policy} $\pi_\xi^* \in \argmax_\pi V_\xi^\pi$: acts optimally w.r.t.\ the \emph{mixture}.
-\end{itemize}
+The \textbf{infinite-horizon value} is defined as the pointwise limit 
+$$
+V_\nu^\pi \equiv  V_\nu^{\pi,\infty}(\aes_{<t}) := \lim_{m \to \infty} V_\nu^{\pi,m}(\aes_{<t}).
+$$
 \pause
+The \textbf{optimal value} is $V_\nu^{*,m}(\aes_{<t}) := \sup_\pi V_\nu^{\pi,m}(\aes_{<t})$, with $V_\nu^* \equiv V_\nu^{*,\infty}$.%
+\pause
+\begin{itemize}
+    \item \textbf{Optimal value} $V_\nu^* := \sup_\pi V_\nu^\pi$; an optimal policy $\pi_\nu^*$ satisfies $V_\nu^{\pi_\nu^*} = V_\nu^*$.
+    \item \textbf{Bayes-optimal policy} $\pi_\xi^* \in \argmax_\pi V_\xi^\pi$: acts optimally w.r.t.\ the \emph{mixture} $\xi$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{AIXI}
 \begin{block}{AIXI}
 $\pi_\xi^*$ with $\cM=$ all lower-semicomputable environments and prior $w_\nu = 2^{-K(\nu)}$.
 \emph{The Bayes-optimal agent under Occam's razor.}
