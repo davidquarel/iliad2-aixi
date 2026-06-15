@@ -183,6 +183,7 @@ Exercises marked with \textbf{($\ast$)} are enrichment and not on either critica
     \item Problems 5--6 prove \emph{on-policy value convergence}: $V_\xi^\pi$ and $V_\mu^\pi$ become indistinguishable for any fixed $\pi$.
     \item Problem~7 shows \emph{AIXI can't be fooled}: the Bayes-optimal agent achieves non-zero value whenever optimal value is non-zero (in deterministic environments).
     \item Problems 8--10 (advanced stretch goal) prove the \emph{self-optimizing property}: if any policy can learn to act optimally, $\pi_\xi^*$ inherits this.
+    \item Problem 11 derives the explicit expectimax form of AIXI.
 \end{itemize}
 
 
@@ -635,7 +636,7 @@ Hence:
 \]
 \end{solution}
 
-\mysubsection{5}{[15] (Existence of $V_\nu^*$)\label{prob:inf_horizon}
+\mysubsection{5}{[15] (*) (Existence of $V_\nu^*$)\label{prob:inf_horizon}
 Show that the pointwise limit $V_\nu^*(\aes_{<t}) := \lim_{m \to \infty} V_\nu^{*,m}(\aes_{<t})$ exists for all histories $\aes_{<t}$.}
 
 \textit{Hint:} Show $V_\nu^{*,m+1}(\aes_{<t}) \geq V_\nu^{*,m}(\aes_{<t})$ by expanding $V_\nu^{*,m+1}$. Use this and \cref{prob:bounded_value}
@@ -682,7 +683,7 @@ Since $\cA$ and $\cE$ are finite, the $\max$ and $\sum$ are over finitely many c
 \]
 \end{solution}
 
-\mysubsection{7}{[25] (Optimal policy for infinite horizon)\label{prob:inf_opt_policy}
+\mysubsection{7}{[25] (*) (Optimal policy for infinite horizon)\label{prob:inf_opt_policy}
 Show that a deterministic policy $\pi_\nu^*$ exists achieving $V_\nu^{\pi_\nu^*}(\aes_{<t}) = V_\nu^*(\aes_{<t})$ for all $\aes_{<t}$.}
 
 \textit{Approach:}
