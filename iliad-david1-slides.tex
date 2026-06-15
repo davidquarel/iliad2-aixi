@@ -135,7 +135,7 @@ Class $\cM=\{\nu_1,\nu_2,\dots\}$ with prior weights $w_\nu>0$, $\sum_\nu w_\nu 
     \pause
     \item \textbf{Posterior update is multiplicative:}
     $w(\nu \mid x_{1:t}) = w(\nu\mid x_{<t})\cdot \dfrac{\nu(x_t\mid x_{<t})}{\xi(x_t\mid x_{<t})}$: we
-    reweight by how well $\nu$ predicted v.s $\xi$ (Bayes' rule!)
+    reweight by how well $\nu$ predicted vs.\ $\xi$ (Bayes' rule!)
 \end{itemize}
 \end{frame}
 
@@ -175,7 +175,7 @@ S_\infty^\mu := \sum_{t=1}^{\infty} \sum_{x_{<t}} \mu(x_{<t})
 \begin{frame}{Specializing to the Solomonoff prior}
 \begin{itemize}
     \item Take the \textbf{Solomonoff prior} $w_\nu = 2^{-K(\nu)}$, where $K(\nu)$ is the
-    \emph{Kolmogorov complexity} --- length of the shortest program computing $\nu$.
+    \emph{Kolmogorov complexity}: length of the shortest program computing $\nu$.
     \pause
     \item Substitute $w_\mu = 2^{-K(\mu)}$ into the cumulative bound:
 \end{itemize}
@@ -218,7 +218,7 @@ S_\infty^\mu := \sum_{t=1}^{\infty} \sum_{x_{<t}} \mu(x_{<t})
 
 \begin{frame}{From prediction to action}
 \begin{itemize}
-    \item Now the agent doesn't just watch --- it \textbf{acts}, and its actions shape what it sees.
+    \item Now the agent doesn't just watch: it \textbf{acts}, and its actions shape what it sees.
     \pause
     \item At each step $t$: the agent picks action $a_t$, the environment returns a
     \textbf{percept} $e_t=(o_t,r_t)$ = observation $+$ reward.
@@ -255,18 +255,33 @@ Run $\pi$ inside $\nu$ and multiply along the history:
 \end{frame}
 
 \begin{frame}{Value, optimality, and AIXI}
-\begin{block}{Value function (geometric discount $\gamma$)}
-\[
-V_\nu^{\pi}(\aes_{<t}) := (1-\gamma)\,\Ex_\nu^\pi\!\Big[\textstyle\sum_{k\geq t} \gamma^{k-t} r_k \;\Big|\; \aes_{<t}\Big] \in [0,1].
-\]
+\begin{block}{Value function (assuming geometric discount $\gamma$)}
+% \[
+% V_\nu^{\pi}(\aes_{<t}) := (1-\gamma)\,\Ex_\nu^\pi\!\Big[\textstyle\sum_{k\geq t} \gamma^{k-t} r_k \;\Big|\; \aes_{<t}\Big] \in [0,1].
+% \]
+\vspace{-0.3cm}
+\begin{align*}
+V_\nu^{\pi,m}(\aes_{<t})
+~&=~ (1-\gamma)\, \underset{\aes_{t:m} \sim \nu^\pi(\cdot \mid \aes_{<t})}{\Ex}
+\!\left[\sum_{k=t}^{m} \gamma^{k-t}\, r_k \right] \\
+~&=~ (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^{m} \gamma^{k-t}\, r_k 
+\end{align*}
 \end{block}
 \pause
-\begin{itemize}
-    \item \textbf{Optimal value} $V_\nu^* := \sup_\pi V_\nu^\pi$; an optimal policy $\pi_\nu^*$ attains it
-    (exists, via Bellman + backward induction).
-    \item \textbf{Bayes-optimal policy} $\pi_\xi^* \in \argmax_\pi V_\xi^\pi$ --- acts optimally w.r.t.\ the \emph{mixture}.
-\end{itemize}
+The \textbf{infinite-horizon value} is defined as the pointwise limit 
+$$
+V_\nu^\pi \equiv  V_\nu^{\pi,\infty}(\aes_{<t}) := \lim_{m \to \infty} V_\nu^{\pi,m}(\aes_{<t}).
+$$
 \pause
+The \textbf{optimal value} is $V_\nu^{*,m}(\aes_{<t}) := \sup_\pi V_\nu^{\pi,m}(\aes_{<t})$, with $V_\nu^* \equiv V_\nu^{*,\infty}$.%
+\pause
+\begin{itemize}
+    \item \textbf{Optimal value} $V_\nu^* := \sup_\pi V_\nu^\pi$; an optimal policy $\pi_\nu^*$ satisfies $V_\nu^{\pi_\nu^*} = V_\nu^*$.
+    \item \textbf{Bayes-optimal policy} $\pi_\xi^* \in \argmax_\pi V_\xi^\pi$: acts optimally w.r.t.\ the \emph{mixture} $\xi$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{AIXI}
 \begin{block}{AIXI}
 $\pi_\xi^*$ with $\cM=$ all lower-semicomputable environments and prior $w_\nu = 2^{-K(\nu)}$.
 \emph{The Bayes-optimal agent under Occam's razor.}
@@ -338,7 +353,7 @@ V_\xi^*(\aes_{<t}) \;\geq\; w_\mu\,\varepsilon \;>\; 0 .
 %     \item For deterministic $\mu$, the posterior never shrinks: $w(\mu\mid \aes_{<t}) \geq w_\mu$.
 % \end{itemize}
 \pause
-\textbf{Intuition:} \emph{Whenever good behaviour in $\mu$ isachievable, 
+\textbf{Intuition:} \emph{Whenever good behaviour in $\mu$ is achievable,
 the Bayes-optimal agent secures at least a fraction proportional to the prior weight of $\mu$.}
 \end{frame}
 

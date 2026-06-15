@@ -3,6 +3,9 @@
             margin=1cm]{geometry}
 \pagestyle{plain}
 
+% tikz auto-loads xcolor (optionless); pass dvipsnames first so the later
+% \usepackage[dvipsnames]{xcolor} does not trigger an option clash on modern TeX Live.
+\PassOptionsToPackage{dvipsnames}{xcolor}
 \usepackage{amsmath, amssymb, amsthm, amsfonts}
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta}
@@ -349,7 +352,7 @@ The \textbf{value} of policy $\pi$ in environment $\nu$ with horizon $m \geq t$ 
 \begin{align*}
     &V_\nu^{\pi,m}(\aes_{<t})
     ~:=~ (1-\gamma)\, \Ex_\nu^\pi\!\left[\sum_{k=t}^{m} \gamma^{k-t}\, r_k ~\Big|~ \aes_{<t}\right] \\
-    ~&:=~ (1-\gamma)\, \underset{\aes_{t:m} \sim \nu^\pi(\cdot \mid \aes_{<t})}{\Ex}
+    ~&=~ (1-\gamma)\, \underset{\aes_{t:m} \sim \nu^\pi(\cdot \mid \aes_{<t})}{\Ex}
     \!\left[\sum_{k=t}^{m} \gamma^{k-t}\, r_k \right] \\
     ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^{m} \gamma^{k-t}\, r_k \\
 \end{align*}
@@ -1229,7 +1232,7 @@ From the definition:
     ~=~ \sum_\nu w_\nu \cdot \frac{\nu(\aes_{1:t})}{\mu(\aes_{1:t})}
     ~=~ \sum_\nu w_\nu X_{\nu,t}.
 \]
-By \cref{fact:dominance}: $\xi(\aes_{1:t}) \geq w_\mu \cdot \mu(\aes_{1:t})$, so $X_{\xi,t} = \xi(\aes_{1:t})/\mu(\aes_{1:t}) \geq w_\mu > 0$.
+By \cref{prob:dominance}: $\xi(\aes_{1:t}) \geq w_\mu \cdot \mu(\aes_{1:t})$, so $X_{\xi,t} = \xi(\aes_{1:t})/\mu(\aes_{1:t}) \geq w_\mu > 0$.
 
 Since $\cM$ is finite, $X_{\xi,t} = \sum_\nu w_\nu X_{\nu,t}$ is a finite sum of convergent sequences, so $X_{\xi,t} \to X_{\xi,\infty} := \sum_\nu w_\nu X_{\nu,\infty} < \infty$ $\mu^\pi$-a.s., with $X_{\xi,\infty} \geq w_\mu > 0$.
 \end{solution}
