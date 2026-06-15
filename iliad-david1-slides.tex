@@ -105,14 +105,15 @@
     \item A \textbf{predictor} $P$ sees the past $x_{<t}$ and outputs a distribution
     $P(\cdot \mid x_{<t})$ over the next bit.
     \pause
-    \item \textbf{Quality measure:} total $\mu$-
-    cted squared prediction error
-    \[
-    S_\infty^\mu := \sum_{t=1}^{\infty} \sum_{x_{<t}} \mu(x_{<t})
-        \sum_{x_t \in \B} \big( P(x_t \mid x_{<t}) - \mu(x_t \mid x_{<t}) \big)^2.
-    \]
+    \item \textbf{Quality measure:} Cumulative $\mu$-expected squared prediction error $S_\infty^\mu := \sum_{t=1}^{\infty} s_t^\mu$
+    \begin{block}{Per-step squared prediction error $s_t^\mu$}
+        \begin{align*}
+    s_t^\mu = \mathbb{E}_\mu \left[ \sum_{x_t} \left( P(x_t \mid x_{<t}) - \mu(x_t \mid x_{<t}) \right)^2 \right] 
+     = \sum_{x_{<t}} \mu(x_{<t}) \left[ \sum_{x_t} \left( P(x_t \mid x_{<t}) - \mu(x_t \mid x_{<t}) \right)^2 \right]
+    \end{align*}
+    \end{block}
     \pause
-    \item \textbf{Goal:} build a $P$ that makes $S_\infty^\mu$ \emph{small}.
+    \item \textbf{Goal:} build a $P$ that makes cumulative error $S_\infty^\mu$ \emph{small}.
     \pause
     \item \textbf{Idea:} don't bet on one model. Hedge your bets and mix 
     over a whole class $\cM=\{\nu_1,\nu_2,\dots\}$ of potential environments.
@@ -265,8 +266,7 @@ Run $\pi$ inside $\nu$ and multiply along the history:
 \vspace{-0.3cm}
 \begin{align*}
 V_\nu^{\pi,m}(\aes_{<t})
-~&=~ (1-\gamma)\, \underset{\aes_{t:m} \sim \nu^\pi(\cdot \mid \aes_{<t})}{\Ex}
-\!\left[\sum_{k=t}^{m} \gamma^{k-t}\, r_k \right] \\
+~&=~ (1-\gamma)\, {\Ex_\nu^\pi} [G_{t-1:m} \mid \aes_{<t}] \text{ with } G_{t-1:m} = \sum_{k=t}^{m} \gamma^{k-t}\, r_k \\
 ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^{m} \gamma^{k-t}\, r_k 
 \end{align*}
 \end{block}
@@ -294,15 +294,15 @@ to environments that you believe to be in, assuming the simplest environments co
 observations are more likely to be true.}
 \pause
 \begin{block}{AIXI, explicitly}
-\red{$\max$ over actions}, \blue{$\sum$ over percepts}, choosing actions that maximise the \green{$\xi$-weighted} \purple{discounted reward}:
+\red{$\max$ over actions}, \blue{$\sum$ over percepts}, choosing actions that maximise the \green{$\xi$-weighted} \purple{discounted return}:
 \[
 \resizebox{\linewidth}{!}{$\displaystyle
     a_t = \red{\argmax_{a_t}}\lim_{m\to\infty}
         \blue{\sum_{e_t}}\red{\max_{a_{t+1}}}\blue{\sum_{e_{t+1}}}\!\cdots\!
       \red{\max_{a_m}}\blue{\sum_{e_m}} \,
       \green{\xi(e_{t:m}\mid \aes_{<t}\,a_{t:m})} \, 
-      \purple{\Big(\sum_{k=t}^m 
-        \gamma_k r_k\Big)} 
+      \purple{\sum_{k=t}^m 
+        \gamma^{k-t} r_k} 
 $}
 \]
 \end{block}

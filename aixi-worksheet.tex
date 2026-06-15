@@ -79,6 +79,13 @@
 \newcommand{\Ex}{\mathbb{E}}
 \newcommand{\Prob}{\mathbb{P}}
 \DeclareMathOperator*{\argmax}{arg\,max}
+% Expectimax operator: "max" stacked over a (xi-weighted) sum, with a range subscript.
+\newcommand{\exmaxsym}{\mathop{\mathchoice
+  {\overset{\textstyle\max}{\textstyle\sum}}%
+  {\overset{\max}{\sum}}%
+  {\overset{\scriptstyle\max}{\scriptstyle\sum}}%
+  {\overset{\scriptscriptstyle\max}{\scriptscriptstyle\sum}}}}
+\newcommand{\exmax}{\exmaxsym\limits}
 \newcommand{\TV}[1][]{\mathrm{TV}_{#1}}
 \newcommand{\aes}{\textnormal{\ae}}
 
@@ -131,6 +138,9 @@ A good target is to complete Problems 6 and 7. The self-optimizing property (Pro
 % Problem 7: same height as 3 and 4, centred between them
 \node[below=6mm of 2] (7) {\hyperref[prob:cant_be_fooled]{\textbf{7} can't be fooled}};
 
+% Problem 11: explicit expectimax form — offshoot of Problem 2 (Bellman optimality)
+\node[right=14mm of 2] (11) {\hyperref[prob:expectimax]{\textbf{11} expectimax}};
+
 % 5 sits to the left of 6
 \node[below=7mm of 3] (5) {\hyperref[prob:tv_bound]{\textbf{5} TV bound}};
 \node[mainresult, below=7mm of 5] (6) {\hyperref[prob:on_policy]{\textbf{6} on-policy}};
@@ -145,6 +155,9 @@ A good target is to complete Problems 6 and 7. The self-optimizing property (Pro
 \draw[arr] (1) -- (2);
 \draw[arr] (2) -- (3);
 \draw[arr] (2) -- (4);
+
+% Edge: Problem 11 (expectimax form of AIXI) depends on the optimal-policy machinery
+\draw[arr] (2) -- (11);
 
 % Edges: Problem 7
 \draw[arr] (3) -- (7);
@@ -343,23 +356,39 @@ See \hyperref[sec:appendix_mixture]{Appendix~A} for a worked example.
 For a function $f : \cH \to \mathbb{R}$ of a finite future segment $\aes'_{t:m}$:
 \[
     \Ex_\nu^\pi[f \mid \aes_{<t}]
-    ~:=~ \sum_{\aes'_{t:m}} \nu^\pi(\aes'_{t:m} \mid \aes_{<t})\, f(\aes'_{t:m}).
+    ~:=~ \underset{\aes_{t:m} \sim \nu^\pi(\cdot \mid \aes_{<t})}{\Ex} [f]
+    ~=~ \sum_{\aes'_{t:m}} \nu^\pi(\aes'_{t:m} \mid \aes_{<t})\, f(\aes'_{t:m}).
 \]
 For functions $f$ of the infinite future (like the value function), with a sequence $f_1, f_2, \ldots \to f$, where $f_m$ depends only on $\aes'_{t:m}$, we define $\Ex_\nu^\pi[f \mid \aes_{<t}] := \lim_{m \to \infty} \Ex_\nu^\pi[f_m \mid \aes_{<t}]$, 
 \end{definition}
 
-\begin{definition}[Value function\footnote{See \hyperref[sec:appendix_value]{Appendix~B} for a worked example. For simplicity, we 
+\begin{definition}[Discounted return $G_{t:m}$]\label{def:return}
+Fix a discount factor $\gamma \in (0,1)$, held constant throughout.
+The \textbf{discounted return} at time step $t$, up to horizon $m$, is
+\[
+    G^\gamma_{t:m}
+    ~:=~ \sum_{k=t+1}^{m} \gamma^{k-(t+1)}\, r_k
+    ~=~ r_{t+1} + \gamma\, r_{t+2} + \cdots + \gamma^{m-t}\, r_m.
+\]
+Since $\gamma$ is fixed we drop it and write $G_{t:m} \equiv G^\gamma_{t:m}$.
+It satisfies the recursion $G_{t:m} = r_{t+1} + \gamma\, G_{t+1:m}$, with $G_{m-1:m} = r_m$ and $G_{n:m} = 0$ for $n \geq m$.
+The \textbf{infinite-horizon return} is the pointwise limit
+\[
+    G_{\geq t} ~\equiv~ G_{t:\infty} ~:=~ \lim_{m \to \infty} G_{t:m} ~=~ \sum_{k=t+1}^{\infty} \gamma^{k-(t+1)}\, r_k,
+\]
+with the clean recursion $G_{\geq t} = r_{t+1} + \gamma\, G_{\geq t+1}$ and no boundary cases.
+\end{definition}
+
+\begin{definition}[Value function\footnote{See \hyperref[sec:appendix_value]{Appendix~B} for a worked example. For simplicity, we
     consider only geometric discounting.}]\label{def:value}
-Fix a discount factor $\gamma \in (0,1)$.
 The \textbf{value} of policy $\pi$ in environment $\nu$ with horizon $m \geq t$ given history $\aes_{<t}$ is
 \begin{align*}
     &V_\nu^{\pi,m}(\aes_{<t})
-    ~:=~ (1-\gamma)\, \Ex_\nu^\pi\!\left[\sum_{k=t}^{m} \gamma^{k-t}\, r_k ~\Big|~ \aes_{<t}\right] \\
-    ~&=~ (1-\gamma)\, \underset{\aes_{t:m} \sim \nu^\pi(\cdot \mid \aes_{<t})}{\Ex}
-    \!\left[\sum_{k=t}^{m} \gamma^{k-t}\, r_k \right] \\
-    ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^{m} \gamma^{k-t}\, r_k \\
+    ~:=~ (1-\gamma)\, \Ex_\nu^\pi\!\left[G_{t-1:m}  \mid \aes_{<t}\right] \\
+    ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t})\, G_{t-1:m} \\
+    ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \left[ \sum_{k=t}^{m} \gamma^{k-t} r_k \right].
 \end{align*}
-The \textbf{infinite-horizon value} is defined as the pointwise limit $V_\nu^{\pi,\infty}(\aes_{<t}) := \lim_{m \to \infty} V_\nu^{\pi,m}(\aes_{<t})$.
+The \textbf{infinite-horizon value} is the pointwise limit $V_\nu^{\pi,\infty}(\aes_{<t}) := \lim_{m \to \infty} V_\nu^{\pi,m}(\aes_{<t}) = (1-\gamma)\, \Ex_\nu^\pi[G_{\geq t-1} \mid \aes_{<t}]$.
 We write $V_\nu^\pi \equiv V_\nu^{\pi,\infty}$ for short.
 
 The \textbf{optimal value} is $V_\nu^{*,m}(\aes_{<t}) := \sup_\pi V_\nu^{\pi,m}(\aes_{<t})$ for $m \in \mathbb{N} \cup \{\infty\}$, with $V_\nu^* \equiv V_\nu^{*,\infty}$.%
@@ -444,11 +473,11 @@ Show that $V_\nu^{\pi,m}(\aes_{<t}) \in [0,1]$ for any $\nu, \pi, m \in \mathbb{
 \begin{solution}
 Since $r_k \in [0,1]$, each discounted reward sum is bounded:
 \[
-    0 ~\leq~ (1-\gamma)\sum_{k=t}^{m} \gamma^{k-t} r_k ~\leq~ (1-\gamma)\sum_{k=t}^{m} \gamma^{k-t} ~=~ 1 - \gamma^{m-t+1} ~\leq~ 1.
+    0 ~\leq~ (1-\gamma)\, G_{t-1:m} ~\leq~ (1-\gamma)\sum_{k=t}^{m} \gamma^{k-t} ~=~ 1 - \gamma^{m-t+1} ~\leq~ 1.
 \]
 The interaction measure satisfies $\nu^\pi(\aes'_{t:m} \mid \aes_{<t}) \geq 0$ and $\sum_{\aes'_{t:m}} \nu^\pi(\aes'_{t:m} \mid \aes_{<t}) = 1$, so the value function is a weighted average of terms in $[0,1]$:
 \[
-    0 ~\leq~ V_\nu^{\pi,m}(\aes_{<t}) ~=~ \sum_{\aes'_{t:m}} \nu^\pi(\aes'_{t:m} \mid \aes_{<t})\, (1-\gamma)\sum_{k=t}^{m} \gamma^{k-t} r_k ~\leq~ 1.
+    0 ~\leq~ V_\nu^{\pi,m}(\aes_{<t}) ~=~ \sum_{\aes'_{t:m}} \nu^\pi(\aes'_{t:m} \mid \aes_{<t})\, (1-\gamma)\, G_{t-1:m} ~\leq~ 1.
 \]
 For $m = \infty$: since $0 \leq V_\nu^{\pi,m}(\aes_{<t}) \leq 1$ for all finite $m$, the limit $V_\nu^\pi(\aes_{<t}) = \lim_{m \to \infty} V_\nu^{\pi,m}(\aes_{<t})$ also lies in $[0,1]$.
 \end{solution}
@@ -520,32 +549,32 @@ Write $\aes'_{t:m} = \aes'_t\, \aes'_{t+1:m}$:
 $\nu^\pi(\aes'_{t:m} \mid \aes_{<t}) = \nu^\pi(\aes'_t \mid \aes_{<t}) \cdot \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t)$.
 
 \emph{Step 2: Split the reward sum.}
-$\sum_{k=t}^{m} \gamma^{k-t} r'_k = r'_t + \gamma \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k$.
+This is just the return recursion (\cref{def:return}): $G_{t-1:m} = r'_t + \gamma\, G_{t:m}$, where $G_{t-1:m} = \sum_{k=t}^{m} \gamma^{k-t} r'_k$ is the return given $\aes_{<t}$.
 
 \emph{Step 3: Substitute into the definition of $V_\nu^{\pi,m}(\aes_{<t})$.}
 \begin{align*}
     V_\nu^{\pi,m}(\aes_{<t})
-    ~&=~ (1-\gamma) \sum_{\aes'_t} \nu^\pi(\aes'_t \mid \aes_{<t}) \\
-    &\qquad \times \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \left[ r'_t + \gamma \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \right].
+    ~&=~ (1-\gamma) \sum_{\aes'_t} \nu^\pi(\aes'_t \mid \aes_{<t}) 
+ \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \left[ r'_t + \gamma G_{t:m} \right].
 \end{align*}
 
 Consider the inner term $\sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) 
-\left[ r'_t + \gamma \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \right]$. 
+\left[ r'_t + \gamma G_{t:m} \right]$. 
 We can expand as:
 \begin{align*}
 &= \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) r'_t 
-+ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \\
++ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) G_{t:m} \\
 &= r'_t \cancel{\sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t)}  
-+ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k \\
++ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) G_{t:m} \\
 &= r'_t
-+ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) \sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k
++ \gamma \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) G_{t:m}
 \end{align*}
 as $r'_t$ doesn't depend on $\aes'_{t+1:m}$, and $\sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t) = 1$.
 Inserting this above, we obtain:
 \begin{align*}
     V_\nu^{\pi,m}(\aes_{<t})
-    ~&=~ \sum_{\aes'_t} \nu^\pi(\aes'_t \mid \aes_{<t}) \bigg[ (1-\gamma)\, r'_t \\
-    &\qquad +~ \gamma\, \underbrace{(1-\gamma) \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t)\sum_{k=t+1}^{m} \gamma^{k-(t+1)} r'_k}_{=\; V_\nu^{\pi,m}(\aes_{<t}\, \aes'_t)} \bigg].
+    &= \sum_{\aes'_t} \nu^\pi(\aes'_t \mid \aes_{<t}) \bigg[ (1-\gamma)\, r'_t + 
+    \gamma\, \underbrace{(1-\gamma) \sum_{\aes'_{t+1:m}} \nu^\pi(\aes'_{t+1:m} \mid \aes_{<t}\, \aes'_t)G_{t:m}}_{=\; V_\nu^{\pi,m}(\aes_{<t}\, \aes'_t)} \bigg].
 \end{align*}
 \end{solution}
 
@@ -576,9 +605,9 @@ By \cref{prob:sup_eq_max}, $\sup_\pi \sum_{a'_t} \pi(a'_t)\, Q(a'_t) = \max_{a'_
 \mysubsection{4}{[10] (Bellman optimality equation)\label{prob:bellman_opt}
 Using \cref{prob:backward_induction}, show that for finite $m$:}
 \[
-    V_\nu^{*,m}(\aes_{<t}) ~=~ \max_{a'_t} \sum_{e'_t} \nu(e'_t \mid \aes_{<t} a'_t) \Big[(1-\gamma)\, r'_t ~+~ \gamma\, V_\nu^{*,m}(\aes_{<t}\, a'_t\, e'_t)\Big].
+    V_\nu^{*,m}(\aes_{<t}) ~=~ \max_{a'_t} \sum_{e'_t} \nu(e'_t \mid \aes_{<t} a'_t) \Big[(1-\gamma)\, r'_t ~+~ \gamma\, V_\nu^{*,m}(\aes_{<t}\, \aes'_t)\Big].
 \]
-
+where $e_t' = o_t' r_t'$ and $\aes'_t = a'_t e'_t$.
 \begin{solution}
 By \cref{prob:backward_induction}, a deterministic optimal policy $\pi^*_\nu$ exists with $V_\nu^{\pi^*_\nu,m} = V_\nu^{*,m}$.
 Substituting $\pi = \pi^*_\nu$ into the Bellman equation from \cref{prob:bellman_finite} (using $V_\nu^{\pi^*_\nu,m} = V_\nu^{*,m}$ on both sides):
@@ -618,17 +647,17 @@ Since $V_\nu^{*,m+1} = \sup_\pi V_\nu^{\pi,m+1}$, it suffices to show $V_\nu^{\p
 Expanding the definition:
 \begin{align*}
     & V_\nu^{\pi,m+1}(\aes_{<t}) \\
-    ~&=~ (1-\gamma) \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t}) \sum_{k=t}^{m+1} \gamma^{k-t} r_k \\
-    ~&=~ (1-\gamma) \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t}) \left[\sum_{k=t}^{m} \gamma^{k-t} r_k ~+~ \gamma^{m+1-t} r_{m+1}\right] \\
-    ~&=~ (1-\gamma) \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t}) \sum_{k=t}^{m} \gamma^{k-t} r_k \\
+    ~&=~ (1-\gamma) \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t})\, G_{t-1:m+1} \\
+    ~&=~ (1-\gamma) \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t}) \left[G_{t-1:m} ~+~ \gamma^{m+1-t} r_{m+1}\right] \\
+    ~&=~ (1-\gamma) \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t}) G_{t-1:m} \\
     ~&\qquad+~ \underbrace{(1-\gamma)\, \gamma^{m+1-t} \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t})\, r_{m+1}}_{\geq\; 0}.
 \end{align*}
-For the first term, marginalize over $a_{m+1}, e_{m+1}$ (which $\sum_{k=t}^m \gamma^{k-t} r_k$ does not depend on):
+For the first term, marginalize over $a_{m+1}, e_{m+1}$ (which $G_{t-1:m}$ does not depend on):
 \[
-    \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t}) \sum_{k=t}^m \gamma^{k-t} r_k
-    ~=~ \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^m \gamma^{k-t} r_k.
+    \sum_{\aes_{t:m+1}} \nu^\pi(\aes_{t:m+1} \mid \aes_{<t}) G_{t-1:m}
+    ~=~ \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) G_{t-1:m}.
 \]
-So $V_\nu^{\pi,m+1}(\aes_{<t}) \geq (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^m \gamma^{k-t} r_k = V_\nu^{\pi,m}(\aes_{<t})$.
+So $V_\nu^{\pi,m+1}(\aes_{<t}) \geq (1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) G_{t-1:m} = V_\nu^{\pi,m}(\aes_{<t})$.
 
 Since $V_\nu^{*,m}(\aes_{<t})$ is non-decreasing in $m$ and bounded in $[0,1]$ by \cref{prob:bounded_value}, the monotone convergence theorem gives that $V_\nu^*(\aes_{<t}) := \lim_{m \to \infty} V_\nu^{*,m}(\aes_{<t})$ exists for each $\aes_{<t}$.
 \end{solution}
@@ -755,12 +784,12 @@ In particular: $\nu^\pi(A) > 0 \implies \xi^\pi(A) \geq w_\nu \cdot \nu^\pi(A) >
 
 \begin{solution}
 By \cref{prob:multi_step_xi}: $\xi^\pi(\aes_{t:m} \mid \aes_{<t}) = \sum_\nu w(\nu \mid \aes_{<t})\, \nu^\pi(\aes_{t:m} \mid \aes_{<t})$.
-Multiply both sides by $(1-\gamma)\sum_{k=t}^{m} \gamma^{k-t} r_k$ and sum over all $\aes_{t:m}$:
+Multiply both sides by $(1-\gamma)G_{t-1:m}$ and sum over all $\aes_{t:m}$:
 \begin{align*}
     V_\xi^{\pi,m}(\aes_{<t})
-    ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \xi^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^{m} \gamma^{k-t} r_k \\
-    ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \left[\sum_\nu w(\nu \mid \aes_{<t})\, \nu^\pi(\aes_{t:m} \mid \aes_{<t})\right] \sum_{k=t}^{m} \gamma^{k-t} r_k \\
-    ~&=~ \sum_\nu w(\nu \mid \aes_{<t}) \underbrace{(1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) \sum_{k=t}^{m} \gamma^{k-t} r_k}_{=\; V_\nu^{\pi,m}(\aes_{<t})}.
+    ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \xi^\pi(\aes_{t:m} \mid \aes_{<t}) G_{t-1:m} \\
+    ~&=~ (1-\gamma) \sum_{\aes_{t:m}} \left[\sum_\nu w(\nu \mid \aes_{<t})\, \nu^\pi(\aes_{t:m} \mid \aes_{<t})\right] G_{t-1:m} \\
+    ~&=~ \sum_\nu w(\nu \mid \aes_{<t}) \underbrace{(1-\gamma) \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t}) G_{t-1:m}}_{=\; V_\nu^{\pi,m}(\aes_{<t})}.
 \end{align*}
 In the last step we exchanged $\sum_{\aes_{t:m}}$ and $\sum_\nu$; this is valid because both are sums of non-negative terms (or, for finite $m$, the sum over $\aes_{t:m}$ is finite). So:
 \[
@@ -1042,7 +1071,7 @@ We want to apply \cref{prob:tv_bound}. Identify:
 \begin{itemize}\itemsep=2pt
     \item $\Omega := \cH^{m-t+1} = (\cA \times \cE)^{m-t+1}$, the finite set of future history segments $\aes_{t:m}$.
     \item $P := \mu^\pi(\cdot \mid \aes_{<t})$ and $Q := \xi^\pi(\cdot \mid \aes_{<t})$, the conditional measures over $\Omega$.
-    \item $f(\aes_{t:m}) := (1-\gamma)\sum_{k=t}^m \gamma^{k-t} r_k$, which satisfies $f \in [0,1]$ by \cref{prob:bounded_value} (so $c = 1$).
+    \item $f(\aes_{t:m}) := (1-\gamma)G_{t-1:m}$, which satisfies $f \in [0,1]$ by \cref{prob:bounded_value} (so $c = 1$).
 \end{itemize}
 Then $V_\nu^{\pi,m}(\aes_{<t}) = \sum_{\aes_{t:m}} \nu^\pi(\aes_{t:m} \mid \aes_{<t})\, f(\aes_{t:m})$ is exactly $\Ex_P[f]$ (for $\nu = \mu$) or $\Ex_Q[f]$ (for $\nu = \xi$).
 Applying \cref{prob:tv_bound}:
@@ -1478,20 +1507,18 @@ This completes the proof of \cref{thm:selfopt}. \qedhere
 For countable $\cM$, this final step is harder: a countable sum of $\mu^\pi$-a.s.-convergent sequences need not converge $\mu^\pi$-a.s.\ The general proof uses a ``convergence of mixture tails'' argument \cite[Lem.~5.28]{Hutter:04uaibook}.
 
 % ===================================% 
-% TODO Solutions need detailed rewriting
-
 \section{The Expectimax Form of AIXI}\label{prob:expectimax}
 
 We have specified AIXI only implicitly, as the Bayes-optimal policy $\pi_\xi^*$ (\cref{def:value}).
 We now unroll this definition into the explicit \textbf{expectimax} expression: an alternating sequence of maximizations over actions and $\xi$-expectations over percepts.
 
 \mysubsection{1}{[20] (Expectimax form of AIXI)\label{prob:expectimax_derivation}
-By iterating the finite-horizon Bellman optimality equation (\cref{prob:bellman_opt}) for the mixture $\nu = \xi$, show that
+By iterating the finite-horizon Bellman optimality equation (\cref{prob:bellman_opt}), show that
 \[
 \resizebox{\textwidth}{!}{$\displaystyle
     V_\xi^{*,m}(\aes_{<t})
-    ~=~ \max_{a_t} \sum_{e_t} \xi(e_t \mid \aes_{<t} a_t)\, \max_{a_{t+1}} \sum_{e_{t+1}} \xi(e_{t+1} \mid \aes_{<t+1} a_{t+1}) \cdots
-    \max_{a_m} \sum_{e_m} \xi(e_m \mid \aes_{<m} a_m) \left[(1-\gamma)\sum_{k=t}^{m} \gamma^{k-t} r_k\right]
+    ~=~ (1-\gamma) \max_{a_t} \sum_{e_t} \xi(e_t \mid \aes_{<t} a_t)\, \max_{a_{t+1}} \sum_{e_{t+1}} \xi(e_{t+1} \mid \aes_{<t+1} a_{t+1}) \cdots
+    \max_{a_m} \sum_{e_m} \xi(e_m \mid \aes_{<m} a_m) \,G_{t-1:m}
 $}
 \]
 and hence, collecting the percept factors with the chain rule (\cref{prob:chain_rule}) and taking $m \to \infty$ (\cref{prob:inf_horizon,prob:inf_opt_policy}), that AIXI selects the action
@@ -1499,28 +1526,57 @@ and hence, collecting the percept factors with the chain rule (\cref{prob:chain_
 \resizebox{\textwidth}{!}{$\displaystyle
     a_t ~=~ \pi_\xi^*(\aes_{<t})
     ~\in~ \argmax_{a_t} \lim_{m\to\infty} \sum_{e_t} \max_{a_{t+1}} \sum_{e_{t+1}} \cdots \max_{a_m} \sum_{e_m}
-    \left[\sum_{k=t}^{m} \gamma^{k-t} r_k\right] \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m})
+    \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m}) \,G_{t-1:m} 
 $}
 \]
 }
 
-\textit{Hint:} Substitute the Bellman optimality equation into itself, peeling off one $\max_{a_k} \sum_{e_k} \xi(e_k \mid \cdots)$ per step down to $k = m$, where the continuation value vanishes. The leftover reward term $(1-\gamma) r_t$ is constant in the deeper variables; carry it inward using $\sum_{e_k} \xi(e_k \mid \aes_{<k} a_k) = 1$ and $c + \max(\cdot) = \max(c + \cdot)$. You may wish to prove by backwards induction on $t$ from $m$ to $1$.
+\textit{Hint:} Prove the first display by backward induction on $t$ from $m$ down to $1$, using the finite-horizon Bellman optimality equation (\cref{prob:bellman_opt}) and the return recursion $G_{t-1:m} = r_t + \gamma\, G_{t:m}$ (\cref{def:return}). At each step the leftover reward term $(1-\gamma)\, r_t$ is constant in the deeper variables; carry it inward using $\sum_{e_k} \xi(e_k \mid \aes_{<k} a_k) = 1$ and $c + \max(\cdot) = \max(c + \cdot)$.
 
 \begin{solution}
-Unroll the Bellman optimality equation (\cref{prob:bellman_opt}) for $\nu = \xi$,
+Abbreviate the one-step predictor $\xi_k := \xi(e_k \mid \aes_{<k} a_k)$, and write the \textbf{expectimax operator} over steps $i, \ldots, j$ as
 \[
-    V_\xi^{*,m}(\aes_{<t}) ~=~ \max_{a_t} \sum_{e_t} \xi(e_t \mid \aes_{<t} a_t) \big[(1-\gamma)\, r_t + \gamma\, V_\xi^{*,m}(\aes_{1:t})\big],
+    \exmax_{i:j} ~:=~ \max_{a_i} \sum_{e_i} \xi_i\, \max_{a_{i+1}} \sum_{e_{i+1}} \xi_{i+1} \cdots \max_{a_j} \sum_{e_j} \xi_j,
 \]
-into itself: substitute the same identity for the continuation $V_\xi^{*,m}(\aes_{1:t})$, then for \emph{its} continuation, and so on down to time $m$, where $V_\xi^{*,m}(\aes_{1:m}) = 0$ (no reward accrues past the horizon). This produces the nested expression of the first display, with two simplifications:
+the alternating ``maximize over the action, average over the percept'' chain, with the $\xi_k$ weights built in; the single step is $\exmax_k := \max_{a_k} \sum_{e_k} \xi_k$. Two facts:
 \begin{itemize}\itemsep=2pt
-    \item \emph{Discounts.} Each level multiplies the continuation by $\gamma$, so reward $r_k$ enters with weight $(1-\gamma)\gamma^{k-t}$.
-    \item \emph{Constants pass through.} A term independent of the deeper variables, such as $(1-\gamma) r_t$, can be carried inside the remaining $\max/\sum$ layers using $\sum_{e_k} \xi(e_k \mid \aes_{<k} a_k) = 1$ and $c + \max(\cdot) = \max(c + \cdot)$; this lets every reward share the same percept factors.
+    \item \textbf{(E1) Composition:} $\exmax_{i:j} = \exmax_i\, \exmax_{i+1:j}$, by nesting the definition.
+    \item \textbf{(E2) Affine pass-through:} for any $c \in \mathbb{R}$ and $\lambda \geq 0$ not depending on $(a_i, e_i, \ldots, a_j, e_j)$,
+    \[
+        c + \lambda\, \exmax_{i:j} X ~=~ \exmax_{i:j}(c + \lambda X),
+    \]
+    since each layer has $\sum_{e_k} \xi_k = 1$ (so $\sum_{e_k}\xi_k(c+\lambda Y) = c + \lambda \sum_{e_k}\xi_k Y$) and $\max_a(c + \lambda\, g(a)) = c + \lambda \max_a g(a)$ for $\lambda \geq 0$.
 \end{itemize}
-Collecting those factors by the chain rule (\cref{prob:chain_rule}, iterated),
+
+We prove by backward induction on $t = m, m-1, \ldots, 1$ that
 \[
-    \prod_{k=t}^{m} \xi(e_k \mid \aes_{<k} a_k) ~=~ \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m}).
+    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_{t:m}\, G_{t-1:m}.
 \]
-Finally, a Bayes-optimal action maximizes the one-step expression for $V_\xi^* = \lim_{m\to\infty} V_\xi^{*,m}$ (\cref{prob:inf_opt_policy,prob:inf_horizon}); peeling the outer $\max_{a_t}$ off as an $\argmax$ and dropping the positive constant $(1-\gamma)$ (which does not move the maximizer) gives the stated action.
+
+\emph{Base case $t = m$.} Here $G_{m-1:m} = r_m$ and $V_\xi^{*,m}(\aes_{1:m}) = 0$ (the return past the horizon is empty, $G_{m:m} = 0$). The Bellman optimality equation (\cref{prob:bellman_opt}) for $\nu = \xi$ gives
+\[
+    V_\xi^{*,m}(\aes_{<m}) ~=~ \max_{a_m} \sum_{e_m} \xi_m \big[(1-\gamma)\, r_m + \gamma \cdot 0\big] ~=~ (1-\gamma)\, \exmax_{m:m}\, G_{m-1:m}.
+\]
+
+\emph{Inductive step.} Assume the claim at time $t+1$, i.e.\ $V_\xi^{*,m}(\aes_{1:t}) = (1-\gamma)\, \exmax_{t+1:m}\, G_{t:m}$ for every length-$t$ history (recall $\aes_{<t+1} = \aes_{1:t}$). The Bellman optimality equation (\cref{prob:bellman_opt}) at time $t$ reads
+\[
+    V_\xi^{*,m}(\aes_{<t}) ~=~ \exmax_t \big[(1-\gamma)\, r_t + \gamma\, V_\xi^{*,m}(\aes_{1:t})\big].
+\]
+Substituting the inductive hypothesis and pulling out $(1-\gamma)$,
+\[
+    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_t \big[r_t + \gamma\, \exmax_{t+1:m}\, G_{t:m}\big].
+\]
+As $r_t$ and $\gamma$ do not depend on $(a_{t+1}, e_{t+1}, \ldots, a_m, e_m)$, property (E2) carries them inside the inner operator, and the return recursion $G_{t-1:m} = r_t + \gamma\, G_{t:m}$ (\cref{def:return}) gives
+\[
+    r_t + \gamma\, \exmax_{t+1:m}\, G_{t:m} ~\overset{(E2)}{=}~ \exmax_{t+1:m}(r_t + \gamma\, G_{t:m}) ~=~ \exmax_{t+1:m}\, G_{t-1:m}.
+\]
+Recombining the two operators by (E1),
+\[
+    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_t\, \exmax_{t+1:m}\, G_{t-1:m} ~=~ (1-\gamma)\, \exmax_{t:m}\, G_{t-1:m},
+\]
+which expands back into the $\max/\sum$ layers of the first display.
+
+\emph{Infinite horizon and the action.} Taking $m \to \infty$ (\cref{prob:inf_horizon,prob:inf_opt_policy}), $G_{t-1:m} \to G_{\geq t-1}$ and the chain extends indefinitely, so $V_\xi^*(\aes_{<t}) = (1-\gamma)\, \exmax_{t:\infty}\, G_{\geq t-1}$. Collecting the per-step factors by the chain rule (\cref{prob:chain_rule}, iterated), $\prod_{k=t}^{m} \xi_k = \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m})$. A Bayes-optimal action maximizes this expression; peeling the outer $\max_{a_t}$ off as an $\argmax$ and dropping the positive constant $(1-\gamma)$ (which does not move the maximizer) gives the stated action.
 \end{solution}
 
 
