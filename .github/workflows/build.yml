@@ -21,107 +21,96 @@ concurrency:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Worksheets: each source is built twice — solutions shown (sol) and hidden
-  # (nosol). The `\newif\ifsolutions` toggle is set explicitly in the file, so
-  # we rewrite that line with sed before building (same trick as ./build.sh).
-  # To add a worksheet: add its basename (no .tex) to the matrix `file` list
-  # AND give it a title in the deploy job's title map below.
+  # Build: every worksheet (sol + nosol) and every slide deck (present + handout)
+  # is built sequentially inside ONE container. The TeX Live image that
+  # xu-cheng/latex-action ships is multi-GB; a matrix would re-pull it once per
+  # combination (~2 min each, ~20 billed min total). Building everything in a
+  # single job pays that pull ONCE: the action's first compile triggers the
+  # pull, then post_compile builds every target in the same container. Each
+  # individual compile is only ~5 s, so amortizing the pull is the whole win.
+  #
+  # Worksheets toggle solutions via the `\solutions(true|false)` line (rewritten
+  # with sed, same trick as ./build.sh). Slides select pause mode via a one-line
+  # wrapper that \def-s \HANDOUT before \input-ing the deck. Each target runs
+  # pdflatex -> (bibtex iff it cites) -> pdflatex x2 so xrefs/References resolve.
+  #
+  # To add a worksheet: add its basename to WORKSHEETS + the deploy title map.
+  # To add a slide deck: add its basename to SLIDES + the deploy title map.
   # ---------------------------------------------------------------------------
-  worksheets:
+  build:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        file: [solomonoff-all, aixi-worksheet]
-        mode: [sol, nosol]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set solutions toggle (${{ matrix.mode }})
+      - name: Prepare toggled / wrapped sources
         run: |
           set -euo pipefail
-          src="${{ matrix.file }}.tex"
-          tmp="${{ matrix.file }}-${{ matrix.mode }}.tex"
-          if [ "${{ matrix.mode }}" = "sol" ]; then
-            sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionstrue/' "$src" > "$tmp"
-          else
-            sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionsfalse/' "$src" > "$tmp"
-          fi
+          # Worksheets: sol (solutions shown) + nosol (hidden)
+          for file in solomonoff-all aixi-worksheet; do
+            sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionstrue/'  "$file.tex" > "$file-sol.tex"
+            sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionsfalse/' "$file.tex" > "$file-nosol.tex"
+          done
+          # Slides: present (\pause reveals ON) + handout (collapsed)
+          for file in iliad-david1-slides vpg-slides goalmisgen-slides; do
+            printf '\\input{%s}\n'                  "$file" > "$file-present.tex"
+            printf '\\def\\HANDOUT{}\\input{%s}\n'   "$file" > "$file-handout.tex"
+          done
 
-      - name: Build PDF (pdflatex -> bibtex -> pdflatex x2)
+      - name: Build all PDFs in one TeX Live container
         uses: xu-cheng/latex-action@v3
         with:
-          # latexmk's auto-bibtex was leaving \cite references unresolved, so we
-          # drive the passes explicitly: the main compile below is pdflatex pass 1,
-          # then post_compile runs bibtex and two more pdflatex passes.
-          root_file: ${{ matrix.file }}-${{ matrix.mode }}.tex
+          # root_file just triggers the single image pull; the real work (the
+          # full pdflatex -> bibtex -> pdflatex x2 sequence for EVERY target,
+          # including this one) happens in post_compile, in the same container.
+          root_file: solomonoff-all-sol.tex
           compiler: pdflatex
           args: -interaction=nonstopmode -halt-on-error -file-line-error
           post_compile: |
-            # Only run bibtex if this document actually cites anything; otherwise
-            # bibtex aborts with "no \bibdata command" (exit 2) and fails the build.
-            # (e.g. the citation-free solomonoff sheet.)
-            if grep -qF '\citation' "${{ matrix.file }}-${{ matrix.mode }}.aux"; then
-              bibtex ${{ matrix.file }}-${{ matrix.mode }}
-            fi
-            pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
-            pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
+            set -uo pipefail
+            # pdflatex -> (bibtex iff the doc cites anything) -> pdflatex x2
+            compile() {
+              local base="$1"
+              pdflatex -interaction=nonstopmode -halt-on-error -file-line-error "$base.tex" || return 1
+              if grep -qF '\citation' "$base.aux" 2>/dev/null; then
+                bibtex "$base" || return 1
+              fi
+              pdflatex -interaction=nonstopmode -halt-on-error -file-line-error "$base.tex" || return 1
+              pdflatex -interaction=nonstopmode -halt-on-error -file-line-error "$base.tex" || return 1
+            }
+            fail=0
+            for base in \
+              solomonoff-all-sol solomonoff-all-nosol \
+              aixi-worksheet-sol aixi-worksheet-nosol \
+              iliad-david1-slides-present iliad-david1-slides-handout \
+              vpg-slides-present vpg-slides-handout \
+              goalmisgen-slides-present goalmisgen-slides-handout; do
+              echo "::group::build $base"
+              compile "$base" || { echo "::error::build failed: $base"; fail=1; }
+              echo "::endgroup::"
+            done
+            echo "Built PDFs:"; ls -1 *.pdf || true
+            exit $fail
 
-      - name: Upload PDF artifact
+      - name: Upload all PDFs
         uses: actions/upload-artifact@v4
         with:
-          name: worksheet-${{ matrix.file }}-${{ matrix.mode }}
-          path: ${{ matrix.file }}-${{ matrix.mode }}.pdf
-
-  # ---------------------------------------------------------------------------
-  # Slides: each deck is built twice — presentation (\pause reveals ON) and
-  # handout (reveals collapsed). A one-line wrapper .tex selects the mode by
-  # \def-ing \HANDOUT before \input-ing the deck (the deck's preamble adds the
-  # beamer `handout` option iff \HANDOUT is defined). Builds run the explicit
-  # pdflatex -> bibtex -> pdflatex x2 sequence so the References frame resolves.
-  # To add a deck: add its basename to the matrix AND give it a title below.
-  # ---------------------------------------------------------------------------
-  slides:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        file: [iliad-david1-slides, vpg-slides, goalmisgen-slides]
-        mode: [present, handout]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Write wrapper selecting pause mode (${{ matrix.mode }})
-        run: |
-          set -euo pipefail
-          wrap="${{ matrix.file }}-${{ matrix.mode }}.tex"
-          if [ "${{ matrix.mode }}" = "handout" ]; then
-            printf '\\def\\HANDOUT{}\\input{%s}\n' "${{ matrix.file }}" > "$wrap"
-          else
-            printf '\\input{%s}\n' "${{ matrix.file }}" > "$wrap"
-          fi
-
-      - name: Build PDF (pdflatex -> bibtex -> pdflatex x2)
-        uses: xu-cheng/latex-action@v3
-        with:
-          root_file: ${{ matrix.file }}-${{ matrix.mode }}.tex
-          compiler: pdflatex
-          args: -interaction=nonstopmode -halt-on-error -file-line-error
-          post_compile: |
-            # Only run bibtex if this deck actually cites anything; otherwise bibtex
-            # aborts with "no \bibdata command" (exit 2) and fails the build (e.g. the
-            # citation-free vpg-slides deck; goalmisgen-slides DOES cite, so it runs).
-            if grep -qF '\citation' "${{ matrix.file }}-${{ matrix.mode }}.aux"; then
-              bibtex ${{ matrix.file }}-${{ matrix.mode }}
-            fi
-            pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
-            pdflatex -interaction=nonstopmode -halt-on-error -file-line-error ${{ matrix.file }}-${{ matrix.mode }}.tex
-
-      - name: Upload PDF artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: slides-${{ matrix.file }}-${{ matrix.mode }}
-          path: ${{ matrix.file }}-${{ matrix.mode }}.pdf
+          name: pdfs
+          if-no-files-found: error
+          # This artifact is only an in-run hand-off to the deploy job; the
+          # durable, latest-only copy lives on GitHub Pages (which overwrites
+          # each deploy and never expires). So keep artifacts the minimum time.
+          retention-days: 1
+          path: |
+            solomonoff-all-sol.pdf
+            solomonoff-all-nosol.pdf
+            aixi-worksheet-sol.pdf
+            aixi-worksheet-nosol.pdf
+            iliad-david1-slides-present.pdf
+            iliad-david1-slides-handout.pdf
+            vpg-slides-present.pdf
+            vpg-slides-handout.pdf
+            goalmisgen-slides-present.pdf
+            goalmisgen-slides-handout.pdf
 
   # ---------------------------------------------------------------------------
   # Notebooks: generate the Colab notebooks from gen/masters/master_*.py (you
@@ -181,7 +170,7 @@ jobs:
   # Only runs on push to main; PRs build (above) but don't deploy.
   # ---------------------------------------------------------------------------
   deploy:
-    needs: [worksheets, slides, notebooks]
+    needs: [build, notebooks]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
