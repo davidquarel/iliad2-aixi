@@ -875,6 +875,80 @@ Therefore:
 \]
 \end{solution}
 
+% ===================================% 
+\section{The Expectimax Form of AIXI}\label{prob:expectimax}
+
+We have specified AIXI only implicitly, as the Bayes-optimal policy $\pi_\xi^*$ (\cref{def:value}).
+We now unroll this definition into the explicit \textbf{expectimax} expression: an alternating sequence of maximizations over actions and $\xi$-expectations over percepts.
+
+\mysubsection{1}{[20] (Expectimax form of AIXI)\label{prob:expectimax_derivation}
+By iterating the finite-horizon Bellman optimality equation (\cref{prob:bellman_opt}), show that
+\[
+\resizebox{\textwidth}{!}{$\displaystyle
+    V_\xi^{*,m}(\aes_{<t})
+    ~=~ (1-\gamma) \max_{a_t} \sum_{e_t} \xi(e_t \mid \aes_{<t} a_t)\, \max_{a_{t+1}} \sum_{e_{t+1}} \xi(e_{t+1} \mid \aes_{<t+1} a_{t+1}) \cdots
+    \max_{a_m} \sum_{e_m} \xi(e_m \mid \aes_{<m} a_m) \,G_{t-1:m}
+$}
+\]
+and hence, collecting the percept factors with the chain rule (\cref{prob:chain_rule}) and taking $m \to \infty$ (\cref{prob:inf_horizon,prob:inf_opt_policy}), that AIXI selects the action
+\[
+\resizebox{\textwidth}{!}{$\displaystyle
+    a_t ~=~ \pi_\xi^*(\aes_{<t})
+    ~\in~ \argmax_{a_t} \lim_{m\to\infty} \sum_{e_t} \max_{a_{t+1}} \sum_{e_{t+1}} \cdots \max_{a_m} \sum_{e_m}
+    \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m}) \,G_{t-1:m} 
+$}
+\]
+}
+
+\textit{Hint:} Prove the first display by backward induction on $t$ from $m$ down to $1$, using the finite-horizon Bellman optimality equation (\cref{prob:bellman_opt}) and the return recursion $G_{t-1:m} = r_t + \gamma\, G_{t:m}$ (\cref{def:return}). At each step the leftover reward term $(1-\gamma)\, r_t$ is constant in the deeper variables; carry it inward using $\sum_{e_k} \xi(e_k \mid \aes_{<k} a_k) = 1$ and $c + \max(\cdot) = \max(c + \cdot)$.
+
+\begin{solution}
+Abbreviate the one-step predictor $\xi_k := \xi(e_k \mid \aes_{<k} a_k)$, and write the \textbf{expectimax operator} over steps $i, \ldots, j$ as
+\[
+    \exmax_{i:j} ~:=~ \max_{a_i} \sum_{e_i} \xi_i\, \max_{a_{i+1}} \sum_{e_{i+1}} \xi_{i+1} \cdots \max_{a_j} \sum_{e_j} \xi_j,
+\]
+the alternating ``maximize over the action, average over the percept'' chain, with the $\xi_k$ weights built in; the single step is $\exmax_k := \max_{a_k} \sum_{e_k} \xi_k$. Two facts:
+\begin{itemize}\itemsep=2pt
+    \item \textbf{(E1) Composition:} $\exmax_{i:j} = \exmax_i\, \exmax_{i+1:j}$, by nesting the definition.
+    \item \textbf{(E2) Affine pass-through:} for any $c \in \mathbb{R}$ and $\lambda \geq 0$ not depending on $(a_i, e_i, \ldots, a_j, e_j)$,
+    \[
+        c + \lambda\, \exmax_{i:j} X ~=~ \exmax_{i:j}(c + \lambda X),
+    \]
+    since each layer has $\sum_{e_k} \xi_k = 1$ (so $\sum_{e_k}\xi_k(c+\lambda Y) = c + \lambda \sum_{e_k}\xi_k Y$) and $\max_a(c + \lambda\, g(a)) = c + \lambda \max_a g(a)$ for $\lambda \geq 0$.
+\end{itemize}
+
+We prove by backward induction on $t = m, m-1, \ldots, 1$ that
+\[
+    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_{t:m}\, G_{t-1:m}.
+\]
+
+\emph{Base case $t = m$.} Here $G_{m-1:m} = r_m$ and $V_\xi^{*,m}(\aes_{1:m}) = 0$ (the return past the horizon is empty, $G_{m:m} = 0$). The Bellman optimality equation (\cref{prob:bellman_opt}) for $\nu = \xi$ gives
+\[
+    V_\xi^{*,m}(\aes_{<m}) ~=~ \max_{a_m} \sum_{e_m} \xi_m \big[(1-\gamma)\, r_m + \gamma \cdot 0\big] ~=~ (1-\gamma)\, \exmax_{m:m}\, G_{m-1:m}.
+\]
+
+\emph{Inductive step.} Assume the claim at time $t+1$, i.e.\ $V_\xi^{*,m}(\aes_{1:t}) = (1-\gamma)\, \exmax_{t+1:m}\, G_{t:m}$ for every length-$t$ history (recall $\aes_{<t+1} = \aes_{1:t}$). The Bellman optimality equation (\cref{prob:bellman_opt}) at time $t$ reads
+\[
+    V_\xi^{*,m}(\aes_{<t}) ~=~ \exmax_t \big[(1-\gamma)\, r_t + \gamma\, V_\xi^{*,m}(\aes_{1:t})\big].
+\]
+Substituting the inductive hypothesis and pulling out $(1-\gamma)$,
+\[
+    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_t \big[r_t + \gamma\, \exmax_{t+1:m}\, G_{t:m}\big].
+\]
+As $r_t$ and $\gamma$ do not depend on $(a_{t+1}, e_{t+1}, \ldots, a_m, e_m)$, property (E2) carries them inside the inner operator, and the return recursion $G_{t-1:m} = r_t + \gamma\, G_{t:m}$ (\cref{def:return}) gives
+\[
+    r_t + \gamma\, \exmax_{t+1:m}\, G_{t:m} ~\overset{(E2)}{=}~ \exmax_{t+1:m}(r_t + \gamma\, G_{t:m}) ~=~ \exmax_{t+1:m}\, G_{t-1:m}.
+\]
+Recombining the two operators by (E1),
+\[
+    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_t\, \exmax_{t+1:m}\, G_{t-1:m} ~=~ (1-\gamma)\, \exmax_{t:m}\, G_{t-1:m},
+\]
+which expands back into the $\max/\sum$ layers of the first display.
+
+\emph{Infinite horizon and the action.} Taking $m \to \infty$ (\cref{prob:inf_horizon,prob:inf_opt_policy}), $G_{t-1:m} \to G_{\geq t-1}$ and the chain extends indefinitely, so $V_\xi^*(\aes_{<t}) = (1-\gamma)\, \exmax_{t:\infty}\, G_{\geq t-1}$. Collecting the per-step factors by the chain rule (\cref{prob:chain_rule}, iterated), $\prod_{k=t}^{m} \xi_k = \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m})$. A Bayes-optimal action maximizes this expression; peeling the outer $\max_{a_t}$ off as an $\argmax$ and dropping the positive constant $(1-\gamma)$ (which does not move the maximizer) gives the stated action.
+\end{solution}
+
+
 %===================================
 \section*{On-Policy Value Convergence}
 
@@ -1506,88 +1580,6 @@ This completes the proof of \cref{thm:selfopt}. \qedhere
 
 \textit{Remark.} We do not need to know which policy $\tilde\pi$ is self-optimizing, or whether it is computable. Mere existence suffices.
 For countable $\cM$, this final step is harder: a countable sum of $\mu^\pi$-a.s.-convergent sequences need not converge $\mu^\pi$-a.s.\ The general proof uses a ``convergence of mixture tails'' argument \cite[Lem.~5.28]{Hutter:04uaibook}.
-
-% ===================================% 
-\section{The Expectimax Form of AIXI}\label{prob:expectimax}
-
-We have specified AIXI only implicitly, as the Bayes-optimal policy $\pi_\xi^*$ (\cref{def:value}).
-We now unroll this definition into the explicit \textbf{expectimax} expression: an alternating sequence of maximizations over actions and $\xi$-expectations over percepts.
-
-\mysubsection{1}{[20] (Expectimax form of AIXI)\label{prob:expectimax_derivation}
-By iterating the finite-horizon Bellman optimality equation (\cref{prob:bellman_opt}), show that
-\[
-\resizebox{\textwidth}{!}{$\displaystyle
-    V_\xi^{*,m}(\aes_{<t})
-    ~=~ (1-\gamma) \max_{a_t} \sum_{e_t} \xi(e_t \mid \aes_{<t} a_t)\, \max_{a_{t+1}} \sum_{e_{t+1}} \xi(e_{t+1} \mid \aes_{<t+1} a_{t+1}) \cdots
-    \max_{a_m} \sum_{e_m} \xi(e_m \mid \aes_{<m} a_m) \,G_{t-1:m}
-$}
-\]
-and hence, collecting the percept factors with the chain rule (\cref{prob:chain_rule}) and taking $m \to \infty$ (\cref{prob:inf_horizon,prob:inf_opt_policy}), that AIXI selects the action
-\[
-\resizebox{\textwidth}{!}{$\displaystyle
-    a_t ~=~ \pi_\xi^*(\aes_{<t})
-    ~\in~ \argmax_{a_t} \lim_{m\to\infty} \sum_{e_t} \max_{a_{t+1}} \sum_{e_{t+1}} \cdots \max_{a_m} \sum_{e_m}
-    \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m}) \,G_{t-1:m} 
-$}
-\]
-}
-
-\textit{Hint:} Prove the first display by backward induction on $t$ from $m$ down to $1$, using the finite-horizon Bellman optimality equation (\cref{prob:bellman_opt}) and the return recursion $G_{t-1:m} = r_t + \gamma\, G_{t:m}$ (\cref{def:return}). At each step the leftover reward term $(1-\gamma)\, r_t$ is constant in the deeper variables; carry it inward using $\sum_{e_k} \xi(e_k \mid \aes_{<k} a_k) = 1$ and $c + \max(\cdot) = \max(c + \cdot)$.
-
-\begin{solution}
-Abbreviate the one-step predictor $\xi_k := \xi(e_k \mid \aes_{<k} a_k)$, and write the \textbf{expectimax operator} over steps $i, \ldots, j$ as
-\[
-    \exmax_{i:j} ~:=~ \max_{a_i} \sum_{e_i} \xi_i\, \max_{a_{i+1}} \sum_{e_{i+1}} \xi_{i+1} \cdots \max_{a_j} \sum_{e_j} \xi_j,
-\]
-the alternating ``maximize over the action, average over the percept'' chain, with the $\xi_k$ weights built in; the single step is $\exmax_k := \max_{a_k} \sum_{e_k} \xi_k$. Two facts:
-\begin{itemize}\itemsep=2pt
-    \item \textbf{(E1) Composition:} $\exmax_{i:j} = \exmax_i\, \exmax_{i+1:j}$, by nesting the definition.
-    \item \textbf{(E2) Affine pass-through:} for any $c \in \mathbb{R}$ and $\lambda \geq 0$ not depending on $(a_i, e_i, \ldots, a_j, e_j)$,
-    \[
-        c + \lambda\, \exmax_{i:j} X ~=~ \exmax_{i:j}(c + \lambda X),
-    \]
-    since each layer has $\sum_{e_k} \xi_k = 1$ (so $\sum_{e_k}\xi_k(c+\lambda Y) = c + \lambda \sum_{e_k}\xi_k Y$) and $\max_a(c + \lambda\, g(a)) = c + \lambda \max_a g(a)$ for $\lambda \geq 0$.
-\end{itemize}
-
-We prove by backward induction on $t = m, m-1, \ldots, 1$ that
-\[
-    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_{t:m}\, G_{t-1:m}.
-\]
-
-\emph{Base case $t = m$.} Here $G_{m-1:m} = r_m$ and $V_\xi^{*,m}(\aes_{1:m}) = 0$ (the return past the horizon is empty, $G_{m:m} = 0$). The Bellman optimality equation (\cref{prob:bellman_opt}) for $\nu = \xi$ gives
-\[
-    V_\xi^{*,m}(\aes_{<m}) ~=~ \max_{a_m} \sum_{e_m} \xi_m \big[(1-\gamma)\, r_m + \gamma \cdot 0\big] ~=~ (1-\gamma)\, \exmax_{m:m}\, G_{m-1:m}.
-\]
-
-\emph{Inductive step.} Assume the claim at time $t+1$, i.e.\ $V_\xi^{*,m}(\aes_{1:t}) = (1-\gamma)\, \exmax_{t+1:m}\, G_{t:m}$ for every length-$t$ history (recall $\aes_{<t+1} = \aes_{1:t}$). The Bellman optimality equation (\cref{prob:bellman_opt}) at time $t$ reads
-\[
-    V_\xi^{*,m}(\aes_{<t}) ~=~ \exmax_t \big[(1-\gamma)\, r_t + \gamma\, V_\xi^{*,m}(\aes_{1:t})\big].
-\]
-Substituting the inductive hypothesis and pulling out $(1-\gamma)$,
-\[
-    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_t \big[r_t + \gamma\, \exmax_{t+1:m}\, G_{t:m}\big].
-\]
-As $r_t$ and $\gamma$ do not depend on $(a_{t+1}, e_{t+1}, \ldots, a_m, e_m)$, property (E2) carries them inside the inner operator, and the return recursion $G_{t-1:m} = r_t + \gamma\, G_{t:m}$ (\cref{def:return}) gives
-\[
-    r_t + \gamma\, \exmax_{t+1:m}\, G_{t:m} ~\overset{(E2)}{=}~ \exmax_{t+1:m}(r_t + \gamma\, G_{t:m}) ~=~ \exmax_{t+1:m}\, G_{t-1:m}.
-\]
-Recombining the two operators by (E1),
-\[
-    V_\xi^{*,m}(\aes_{<t}) ~=~ (1-\gamma)\, \exmax_t\, \exmax_{t+1:m}\, G_{t-1:m} ~=~ (1-\gamma)\, \exmax_{t:m}\, G_{t-1:m},
-\]
-which expands back into the $\max/\sum$ layers of the first display.
-
-\emph{Infinite horizon and the action.} Taking $m \to \infty$ (\cref{prob:inf_horizon,prob:inf_opt_policy}), $G_{t-1:m} \to G_{\geq t-1}$ and the chain extends indefinitely, so $V_\xi^*(\aes_{<t}) = (1-\gamma)\, \exmax_{t:\infty}\, G_{\geq t-1}$. Collecting the per-step factors by the chain rule (\cref{prob:chain_rule}, iterated), $\prod_{k=t}^{m} \xi_k = \xi(e_{t:m} \mid \aes_{<t}\, a_{t:m})$. A Bayes-optimal action maximizes this expression; peeling the outer $\max_{a_t}$ off as an $\argmax$ and dropping the positive constant $(1-\gamma)$ (which does not move the maximizer) gives the stated action.
-\end{solution}
-
-
-
-
-
-
-
-
-
 
 %===================================
 \clearpage
