@@ -1413,12 +1413,12 @@ If $X_{\nu,\infty} = 0$, then $X_{\nu,t-1} \to 0$ $\mu^\pi$-a.s.\ (\cref{prob:X_
 \]
 
 \emph{Step 3: Countable union.} The level sets of $X_{\nu,\infty}$ form a nested increasing family: $\{X_{\nu,\infty} > 0\} = \bigcup_{n \geq 1} \{X_{\nu,\infty} \geq 1/n\}$. Intersecting with $F$ gives $F \cap \{X_{\nu,\infty} > 0\} = \bigcup_{n \geq 1} \big(F \cap \{X_{\nu,\infty} \geq 1/n\}\big)$, a countable union. By countable subadditivity (\cref{def:events}):
-\[
+\begin{align*}
     \mu^\pi\!\big[F \cap \{X_{\nu,\infty} > 0\}\big]
-    ~=~ \mu^\pi\!\Big[\textstyle\bigcup_{n} F \cap \{X_{\nu,\infty} \geq 1/n\}\Big]
-    ~\leq~ \sum_{n \geq 1} \mu^\pi\!\big[F \cap \{X_{\nu,\infty} \geq 1/n\}\big]
+    ~=~ &\mu^\pi\!\Big[\textstyle\bigcup_{n} F \cap \{X_{\nu,\infty} \geq 1/n\}\Big] \\
+    ~\leq~ \sum_{n \geq 1} \, &\mu^\pi\!\big[F \cap \{X_{\nu,\infty} \geq 1/n\}\big]
     ~=~ 0.
-\]
+\end{align*}
 
 \emph{What this says.} ``$\delta_{\nu,t} \to 0$ $\mu^\pi$-a.s.\ on $\{X_{\nu,\infty} > 0\}$'' is shorthand for exactly this event statement: among infinite histories on which the likelihood ratio stays bounded away from zero, all but a $\mu^\pi$-null subset are ones where $\delta_{\nu,t}(\aes_{<t}) \to 0$. We do \emph{not} claim convergence on histories where $X_{\nu,\infty} = 0$: that case is handled separately in \cref{prob:vanishing_posterior} via the posterior weight.
 \end{solution}
