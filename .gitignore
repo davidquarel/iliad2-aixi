@@ -1,0 +1,37 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.brf
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.synctex(busy)
+*.toc
+*.vrb
+*.xdv
+*.dvi
+*.ps
+
+# Build directories
+_minted-*/
+_build/
+
+# Editor / OS noise
+*.swp
+*~
+.DS_Store
+
+# Keep PDFs untracked (deliverable, but not source)
+*.pdf
