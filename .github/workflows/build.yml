@@ -51,7 +51,7 @@ jobs:
             sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionsfalse/' "$file.tex" > "$file-nosol.tex"
           done
           # Slides: present (\pause reveals ON) + handout (collapsed)
-          for file in iliad-david1-slides vpg-slides goalmisgen-slides; do
+          for file in si_and_aixi_slides vpg-slides goalmisgen-slides; do
             printf '\\input{%s}\n'                  "$file" > "$file-present.tex"
             printf '\\def\\HANDOUT{}\\input{%s}\n'   "$file" > "$file-handout.tex"
           done
@@ -81,7 +81,7 @@ jobs:
             for base in \
               solomonoff-all-sol solomonoff-all-nosol \
               aixi-worksheet-sol aixi-worksheet-nosol \
-              iliad-david1-slides-present iliad-david1-slides-handout \
+              si_and_aixi_slides-present si_and_aixi_slides-handout \
               vpg-slides-present vpg-slides-handout \
               goalmisgen-slides-present goalmisgen-slides-handout; do
               echo "::group::build $base"
@@ -105,8 +105,8 @@ jobs:
             solomonoff-all-nosol.pdf
             aixi-worksheet-sol.pdf
             aixi-worksheet-nosol.pdf
-            iliad-david1-slides-present.pdf
-            iliad-david1-slides-handout.pdf
+            si_and_aixi_slides-present.pdf
+            si_and_aixi_slides-handout.pdf
             vpg-slides-present.pdf
             vpg-slides-handout.pdf
             goalmisgen-slides-present.pdf
@@ -207,7 +207,7 @@ jobs:
             case "$1" in
               solomonoff-all)      echo "Solomonoff Induction Exercises" ;;
               aixi-worksheet)      echo "AIXI Exercises" ;;
-              iliad-david1-slides) echo "Universal AI: Solomonoff Induction &amp; AIXI" ;;
+              si_and_aixi_slides) echo "Universal AI: Solomonoff Induction &amp; AIXI" ;;
               vpg-slides)          echo "Vanilla Policy Gradient" ;;
               goalmisgen-slides)   echo "Goal Misgeneralisation &amp; Specification Gaming" ;;
               *)                   echo "$1" ;;
@@ -286,7 +286,7 @@ jobs:
             # ===== D.3 Solomonoff Induction and AIXI =====
             echo "<h2>D.3 Solomonoff Induction and AIXI</h2>"
             echo "<h3>Slides</h3><table class=\"r\">"
-            slide_row iliad-david1-slides
+            slide_row si_and_aixi_slides
             echo "</table>"
             echo "<h3>Worksheets</h3><table class=\"r\">"
             worksheet_row solomonoff-all

@@ -5,11 +5,11 @@
 %
 % Build: pdflatex -> bibtex -> pdflatex -> pdflatex (bibtex needed for the
 %        References frame; CI's latexmk runs this automatically).
-%        pdflatex -interaction=nonstopmode -halt-on-error iliad-david1-slides.tex
+%        pdflatex -interaction=nonstopmode -halt-on-error si_and_aixi_slides.tex
 %
 % Pause behaviour: the default build keeps the \pause reveals (presentation).
 % Define \HANDOUT to collapse them into a static handout, e.g.
-%   pdflatex "\def\HANDOUT{}\input{iliad-david1-slides}"
+%   pdflatex "\def\HANDOUT{}\input{si_and_aixi_slides}"
 %   latexmk  ... -usepretex=\def\HANDOUT{}        (used by CI)
 
 \ifdefined\HANDOUT\PassOptionsToClass{handout}{beamer}\fi

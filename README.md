@@ -17,14 +17,14 @@ push. CI lives in `.github/workflows/build.yml`.
 
 ## Local build
 
-**Slides** — any deck (`iliad-david1-slides`, `vpg-slides`, `goalmisgen-slides`):
+**Slides** — any deck (`si_and_aixi_slides`, `vpg-slides`, `goalmisgen-slides`):
 
 ```bash
 pdflatex goalmisgen-slides.tex                       # presentation (\pause reveals on)
 pdflatex "\def\HANDOUT{}\input{goalmisgen-slides}"   # handout (reveals collapsed)
 ```
 
-Decks that cite (`iliad-david1-slides`, `goalmisgen-slides`) need a `bibtex <deck>` pass
+Decks that cite (`si_and_aixi_slides`, `goalmisgen-slides`) need a `bibtex <deck>` pass
 between two `pdflatex` runs; `vpg-slides` has no citations.
 
 **Worksheets** — `solomonoff-all`, `aixi-worksheet`: same `pdflatex` (run twice for cleveref).

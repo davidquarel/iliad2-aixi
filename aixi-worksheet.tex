@@ -67,6 +67,10 @@
 \Crefname{section}{Problem}{Problems}
 \crefname{subsection}{Problem}{Problems}
 \Crefname{subsection}{Problem}{Problems}
+% Typeset \crefrange ranges as "Problems 3--5" (en-dash), matching the prose style.
+% cleveref defines \crefrangeconjunction only \AtBeginDocument, so the override
+% must be deferred to the same hook (running after cleveref's own default).
+\AtBeginDocument{\renewcommand{\crefrangeconjunction}{--}}
 
 \newcommand{\mysubsection}[2]{\par\medskip\noindent\refstepcounter{subsection}\textbf{\thesubsection.}~#2\par\smallskip}
 
@@ -103,20 +107,22 @@ Much of this material is drawn from \href{https://www.hutter1.net/publ/uaibook2.
 
 \medskip
 \noindent
-\textbf{Difficulty ratings.} Each subproblem is tagged with a rating in square brackets using Knuth's scale \cite{Knuth:73a}: roughly, \textbf{[00]}~trivial, \textbf{[10]}~15--minute pencil-and-paper, \textbf{[20]}~1--2~hours, \textbf{[30]}~several hours to a day, \textbf{[40]}~a significant research result. Intermediate values are possible. See \cref{sec:appendix_difficulty} for the full scale. Problems marked \textbf{($\ast$)} are less interesting/insightful and while the result may be used later, I would recommend skipping them on a first pass.
+\textbf{Difficulty ratings.} Each subproblem is tagged with a rating in square brackets using Knuth's scale \cite{Knuth:73a}: roughly, \textbf{[00]}~trivial, \textbf{[10]}~15--minute pencil-and-paper, \textbf{[20]}~1--2~hours, \textbf{[30]}~several hours to a day, \textbf{[40]}~a significant research result. Intermediate values are possible. See \cref{sec:appendix_difficulty} for the full scale. 
+
+Problems marked \textbf{($\ast$)} are less interesting/insightful and while the result may be used later, I would recommend skipping them on a first pass.
 
 %===================================
 \section*{Goal and Roadmap}
 
 This exercise sheet builds towards three main results:
 \begin{itemize}\itemsep=2pt
-    \item \textbf{On-policy value convergence} (Problem~6): the Bayesian mixture $\xi$ learns to predict the value of any fixed policy as well as the true environment $\mu$.
-    \item \textbf{AIXI can't be fooled} (Problem~7): in deterministic environments, the Bayes-optimal agent is guaranteed non-zero value whenever optimal value is non-zero.
-    \item \textbf{Self-optimizing property} (Problem~10, advanced stretch goal): the Bayes-optimal policy $\pi_\xi^*$ learns to \emph{act} as well as if it knew $\mu$, provided that any learnable policy can achieve this. This is the central theoretical justification for the AIXI agent.
+    \item \textbf{On-policy value convergence} (\cref{prob:on_policy}): the Bayesian mixture $\xi$ learns to predict the value of any fixed policy as well as the true environment $\mu$.
+    \item \textbf{AIXI can't be fooled} (\cref{prob:cant_be_fooled}): in deterministic environments, the Bayes-optimal agent is guaranteed non-zero value whenever optimal value is non-zero.
+    \item \textbf{Self-optimizing property} (\cref{prob:selfopt}, advanced stretch goal): the Bayes-optimal policy $\pi_\xi^*$ learns to \emph{act} as well as if it knew $\mu$, provided that any learnable policy can achieve this. This is the central theoretical justification for the AIXI agent.
 \end{itemize}
-A good target is to complete Problems 6 and 7. The self-optimizing property (Problems 8--10) requires substantial additional machinery (supermartingales, change of measure) and is an advanced stretch goal.
+A good target is to complete \cref{prob:on_policy,prob:cant_be_fooled}. The self-optimizing property (\crefrange{prob:supermartingale}{prob:selfopt}) requires substantial additional machinery (supermartingales, change of measure) and is an advanced stretch goal.
 
-\textbf{Critical path.} The three results share a common foundation (Problems 0--4) and then diverge:
+\textbf{Critical path.} The three results share a common foundation (\crefrange{prob:measures}{prob:linearity}) and then diverge:
 
 \begin{center}
 \begin{tikzpicture}[
@@ -127,28 +133,28 @@ A good target is to complete Problems 6 and 7. The self-optimizing property (Pro
     enrichment/.style={draw, dashed}
 ]
 % Common trunk
-\node (0) {\hyperref[prob:measures]{\textbf{0} measures}};
-\node[below=of 0] (1) {\hyperref[prob:mixture_props]{\textbf{1} mixture}};
-\node[below=of 1] (2) {\hyperref[prob:optimal_exists]{\textbf{2} optimal policies}};
+\node (0) {\hyperref[prob:measures]{\textbf{\ref*{prob:measures}} measures}};
+\node[below=of 0] (1) {\hyperref[prob:mixture_props]{\textbf{\ref*{prob:mixture_props}} mixture}};
+\node[below=of 1] (2) {\hyperref[prob:optimal_exists]{\textbf{\ref*{prob:optimal_exists}} optimal policies}};
 
 % Branch point — wider spread
-\node[below left=6mm and 12mm of 2] (3) {\hyperref[prob:dominance]{\textbf{3} dominance}};
-\node[below right=6mm and 12mm of 2] (4) {\hyperref[prob:linearity]{\textbf{4} linearity}};
+\node[below left=6mm and 12mm of 2] (3) {\hyperref[prob:dominance]{\textbf{\ref*{prob:dominance}} dominance}};
+\node[below right=6mm and 12mm of 2] (4) {\hyperref[prob:linearity]{\textbf{\ref*{prob:linearity}} linearity}};
 
-% Problem 7: same height as 3 and 4, centred between them
-\node[below=6mm of 2] (7) {\hyperref[prob:cant_be_fooled]{\textbf{7} can't be fooled}};
+% can't-be-fooled: same height as dominance \& linearity, centred between them
+\node[below=6mm of 2] (7) {\hyperref[prob:cant_be_fooled]{\textbf{\ref*{prob:cant_be_fooled}} can't be fooled}};
 
-% Problem 11: explicit expectimax form — offshoot of Problem 2 (Bellman optimality)
-\node[right=14mm of 2] (11) {\hyperref[prob:expectimax]{\textbf{11} expectimax}};
+% expectimax: offshoot of the optimal-policy problem (Bellman optimality)
+\node[right=14mm of 2] (11) {\hyperref[prob:expectimax]{\textbf{\ref*{prob:expectimax}} expectimax}};
 
-% 5 sits to the left of 6
-\node[below=7mm of 3] (5) {\hyperref[prob:tv_bound]{\textbf{5} TV bound}};
-\node[mainresult, below=7mm of 5] (6) {\hyperref[prob:on_policy]{\textbf{6} on-policy}};
+% TV bound sits above on-policy
+\node[below=7mm of 3] (5) {\hyperref[prob:tv_bound]{\textbf{\ref*{prob:tv_bound}} TV bound}};
+\node[mainresult, below=7mm of 5] (6) {\hyperref[prob:on_policy]{\textbf{\ref*{prob:on_policy}} on-policy}};
 
 % Right branch
-\node[below=7mm of 4] (8) {\hyperref[prob:supermartingale]{\textbf{8} martingales}};
-\node[below=of 8] (9) {\hyperref[prob:change_measure]{\textbf{9} change of measure}};
-\node[mainresult, below=7mm of 9] (10) {\hyperref[prob:selfopt]{\textbf{10} self-optimizing}};
+\node[below=7mm of 4] (8) {\hyperref[prob:supermartingale]{\textbf{\ref*{prob:supermartingale}} martingales}};
+\node[below=of 8] (9) {\hyperref[prob:change_measure]{\textbf{\ref*{prob:change_measure}} change of measure}};
+\node[mainresult, below=7mm of 9] (10) {\hyperref[prob:selfopt]{\textbf{\ref*{prob:selfopt}} self-optimizing}};
 
 % Edges: trunk
 \draw[arr] (0) -- (1);
@@ -156,10 +162,10 @@ A good target is to complete Problems 6 and 7. The self-optimizing property (Pro
 \draw[arr] (2) -- (3);
 \draw[arr] (2) -- (4);
 
-% Edge: Problem 11 (expectimax form of AIXI) depends on the optimal-policy machinery
+% Edge: expectimax depends on the optimal-policy machinery
 \draw[arr] (2) -- (11);
 
-% Edges: Problem 7
+% Edges: can't be fooled
 \draw[arr] (3) -- (7);
 \draw[arr] (4) -- (7);
 
@@ -175,15 +181,14 @@ A good target is to complete Problems 6 and 7. The self-optimizing property (Pro
 \draw[arr] (4) to[out=-20, in=20] (10);
 \end{tikzpicture}
 \end{center}
-Exercises marked with \textbf{($\ast$)} are enrichment and not on either critical path.
 
 \textbf{In summary:}
 \begin{itemize}\itemsep=2pt
-    \item Problems 0--4 establish the Bayesian RL framework: measure algebra, mixture properties, existence of optimal policies, dominance, and linearity.
-    \item Problems 5--6 prove \emph{on-policy value convergence}: $V_\xi^\pi$ and $V_\mu^\pi$ become indistinguishable for any fixed $\pi$.
-    \item Problem~7 shows \emph{AIXI can't be fooled}: the Bayes-optimal agent achieves non-zero value whenever optimal value is non-zero (in deterministic environments).
-    \item Problems 8--10 (advanced stretch goal) prove the \emph{self-optimizing property}: if any policy can learn to act optimally, $\pi_\xi^*$ inherits this.
-    \item Problem 11 derives the explicit expectimax form of AIXI.
+    \item \Crefrange{prob:measures}{prob:linearity} establish the Bayesian RL framework: measure algebra, mixture properties, existence of optimal policies, dominance, and linearity.
+    \item \Cref{prob:expectimax} derives the explicit expectimax form of AIXI.
+    \item \Crefrange{prob:tv_bound}{prob:on_policy} prove \emph{on-policy value convergence}: $V_\xi^\pi$ and $V_\mu^\pi$ become indistinguishable for any fixed $\pi$.
+    \item \Cref{prob:cant_be_fooled} shows \emph{AIXI can't be fooled}: the Bayes-optimal agent achieves non-zero value whenever optimal value is non-zero (in deterministic environments).
+    \item \Crefrange{prob:supermartingale}{prob:selfopt} (advanced stretch goal) prove the \emph{self-optimizing property}: if any policy can learn to act optimally, $\pi_\xi^*$ inherits this.
 \end{itemize}
 
 
@@ -409,7 +414,8 @@ The resulting agent is written $\pi^*_{\xi_U}$, or simply AI$\xi$.
 By including every computable environment, the assumption $\mu \in \cM$ reduces to ``the universe is computable'': as weak an assumption as one can make.
 
 \textbf{Why this prior?}
-The prior $2^{-K(\nu)}$ is \emph{dominant}: for any other computable prior $w'_\nu$, there exists a constant $c > 0$ such that $2^{-K(\nu)} \geq c \cdot w'_\nu$ for all $\nu$. So AIXI cannot be ``outbelieved'' by any computable agent.
+The prior $2^{-K(\nu)}$ is \emph{dominant}: for any other computable prior $w'_\nu$, there exists a constant $c > 0$ such that $2^{-K(\nu)} \geq c \cdot w'_\nu$ for all $\nu$. S
+%So AIXI cannot be ``outbelieved'' by any computable agent.
 
 \textbf{Caveat:}
 The constant $c$ depends on the choice of universal Turing machine $U$, and adversarial choices of $U$ can make AIXI behave arbitrarily badly~\cite{Leike:15badpriors}.
@@ -422,8 +428,8 @@ See \cite{Hutter:24uaibook2}: Chapter~2.7 for Kolmogorov complexity, Chapters~3.
 \section{Properties of the Bayesian Mixture}\label{prob:mixture_props}
 
 
-Several of these results are already proven in the Solomonoff worksheet, but are included
-here for reference. 
+% Several of these results are already proven in the Solomonoff worksheet, but are included
+% here for reference. 
 
 \mysubsection{1}{[10] ($\ast$) (Posterior update)\label{prob:posterior_update}
 Show that the posterior updates multiplicatively:}
@@ -483,7 +489,7 @@ The interaction measure satisfies $\nu^\pi(\aes'_{t:m} \mid \aes_{<t}) \geq 0$ a
 For $m = \infty$: since $0 \leq V_\nu^{\pi,m}(\aes_{<t}) \leq 1$ for all finite $m$, the limit $V_\nu^\pi(\aes_{<t}) = \lim_{m \to \infty} V_\nu^{\pi,m}(\aes_{<t})$ also lies in $[0,1]$.
 \end{solution}
 
-\mysubsection{4}{[15] (Multi-step posterior linearity of $\xi^\pi$)\label{prob:multi_step_xi}
+\mysubsection{4}{[15] ($\ast$) (Multi-step posterior linearity of $\xi^\pi$)\label{prob:multi_step_xi}
 Extend \cref{prob:one_step} to multi-step histories: show that for finite $m \geq t$,}
 \[
     \xi^\pi(\aes_{t:m} \mid \aes_{<t})
@@ -636,7 +642,7 @@ Hence:
 \]
 \end{solution}
 
-\mysubsection{5}{[15] (*) (Existence of $V_\nu^*$)\label{prob:inf_horizon}
+\mysubsection{5}{[15] ($\ast$) (Existence of $V_\nu^*$)\label{prob:inf_horizon}
 Show that the pointwise limit $V_\nu^*(\aes_{<t}) := \lim_{m \to \infty} V_\nu^{*,m}(\aes_{<t})$ exists for all histories $\aes_{<t}$.}
 
 \textit{Hint:} Show $V_\nu^{*,m+1}(\aes_{<t}) \geq V_\nu^{*,m}(\aes_{<t})$ by expanding $V_\nu^{*,m+1}$. Use this and \cref{prob:bounded_value}
@@ -683,7 +689,7 @@ Since $\cA$ and $\cE$ are finite, the $\max$ and $\sum$ are over finitely many c
 \]
 \end{solution}
 
-\mysubsection{7}{[25] (*) (Optimal policy for infinite horizon)\label{prob:inf_opt_policy}
+\mysubsection{7}{[25] ($\ast$) (Optimal policy for infinite horizon)\label{prob:inf_opt_policy}
 Show that a deterministic policy $\pi_\nu^*$ exists achieving $V_\nu^{\pi_\nu^*}(\aes_{<t}) = V_\nu^*(\aes_{<t})$ for all $\aes_{<t}$.}
 
 \textit{Approach:}
@@ -758,7 +764,7 @@ we have $V_\nu^{\pi_\nu^*,m}(\aes_{<t}) \to V_\nu^*(\aes_{<t})$, i.e.\ $V_\nu^{\
 
 \section{Dominance of the Bayesian Mixture}\label{prob:dominance}
 
-\mysubsection{1}{[05] Show that $\xi(\aes_{<t}) \geq w_\nu \cdot \nu(\aes_{<t})$ for every $\nu \in \cM$.}
+\mysubsection{1}{[03] Show that $\xi(\aes_{<t}) \geq w_\nu \cdot \nu(\aes_{<t})$ for every $\nu \in \cM$.}
 
 \begin{solution}
 $\xi(\aes_{<t}) = \sum_{\nu' \in \cM} w_{\nu'} \nu'(\aes_{<t}) \geq w_\nu \nu(\aes_{<t})$.
@@ -768,7 +774,7 @@ $\xi(\aes_{<t}) = \sum_{\nu' \in \cM} w_{\nu'} \nu'(\aes_{<t}) \geq w_\nu \nu(\a
 
 \begin{solution}
 By \cref{prob:factorization}: $\xi^\pi(\aes_{1:m}) = \pi(\aes_{1:m}) \cdot \xi(\aes_{1:m}) \geq \pi(\aes_{1:m}) \cdot w_\nu \nu(\aes_{1:m}) = w_\nu \cdot \nu^\pi(\aes_{1:m})$.
-In particular: $\nu^\pi(A) > 0 \implies \xi^\pi(A) \geq w_\nu \cdot \nu^\pi(A) > 0$.
+%In particular: $\nu^\pi(A) > 0 \implies \xi^\pi(A) \geq w_\nu \cdot \nu^\pi(A) > 0$.
 \end{solution}
 
 
@@ -803,7 +809,7 @@ If $a_{\nu,m} \to a_\nu$ as $m \to \infty$ for each $\nu$, and $|a_{\nu,m}| \leq
 (For finite sums this is trivial.)
 \end{fact}
 
-\mysubsection{2}{[17] (Infinite-horizon linearity)\label{prob:linearity_inf}
+\mysubsection{2}{[17] ($\ast$) (Infinite-horizon linearity)\label{prob:linearity_inf}
 Show that the result extends to $m = \infty$:}
 \[
     V_\xi^\pi(\aes_{<t})
@@ -952,8 +958,8 @@ which expands back into the $\max/\sum$ layers of the first display.
 %===================================
 \section*{On-Policy Value Convergence}
 
-The following problems prove the first two main results: on-policy value convergence (Problem~6), and that AIXI can't be fooled in deterministic environments (Problem~7).
-The path to the self-optimizing property (advanced stretch goal) resumes at Problem~8.
+The following problems prove the first two main results: on-policy value convergence (\cref{prob:on_policy}), and that AIXI can't be fooled in deterministic environments (\cref{prob:cant_be_fooled}).
+The path to the self-optimizing property (advanced stretch goal) resumes at \cref{prob:supermartingale}.
 
 %===================================
 \section{Bounding Expectation Differences by Total Variation}\label{prob:tv_bound}
@@ -969,7 +975,7 @@ $\Ex_P[f] := \sum_{\omega \in \Omega} f(\omega)\, P(\omega)$.
 
 The following technical lemma is needed for the on-policy value convergence proof.
 
-\mysubsection{1}{[15] Let $f : \Omega \to [0, c]$. Show that
+\mysubsection{1}{[15] ($\ast$) Let $f : \Omega \to [0, c]$. Show that
 $\big|\Ex_P[f] - \Ex_Q[f]\big| \leq c \cdot \TV[\Omega](P, Q)$.}
 
 \textit{Hint:} Define $A^+ = \{\omega \in \Omega : P(\omega) \geq Q(\omega)\}$ and decompose the expectation difference as a sum over $A^+$ and its complement $A^- = \Omega \setminus A^+$.
@@ -1273,14 +1279,14 @@ Combining with \cref{prob:xi_lower_bound}:
 
 
 %===================================
-\section*{Problems 8--10: Self-Optimizing Policy (Finite Model Class)}
+\section*{\Crefrange{prob:supermartingale}{prob:selfopt}: Self-Optimizing Policy (Finite Model Class)}
 
-The critical path resumes here. We now prove: if \emph{any} policy can learn to act optimally, $\pi_\xi^*$ also learns. We restrict to finite $\cM = \{\nu_1, \ldots, \nu_N\}$ where each $\nu_i$ is a proper probability measure.
+We now prove: if \emph{any} policy can learn to act optimally, $\pi_\xi^*$ also learns. We restrict to finite $\cM = \{\nu_1, \ldots, \nu_N\}$ where each $\nu_i$ is a proper probability measure.
 
 %===================================
 \section{Likelihood Ratios Are Martingales}\label{prob:supermartingale}
 
-The following definition and theorem state the main goal of Problems 8--10.
+The following definition and theorem state the main goal of \crefrange{prob:supermartingale}{prob:selfopt}.
 
 \begin{definition}[Self-optimizing]\label{def:selfopt}
 Fix a historic policy $\pi$. A policy $\tilde\pi$ is \textbf{self-optimizing} for $\cM$ with respect to $\pi$ if for every $\nu \in \cM$:
@@ -1308,7 +1314,7 @@ If equality holds, it is a $\mu^\pi$-\textbf{martingale}.
 A supermartingale is a quantity whose expected future value, given the present, is no larger than its current value: it cannot ``drift upward on average.'' A martingale is the equality case: expected future value equals current value.
 The key example is the \textbf{likelihood ratio} $X_{\nu,t}(\aes_{1:t}) := \nu(\aes_{1:t})/\mu(\aes_{1:t})$: how much more (or less) likely the observed history is under $\nu$ than under the true environment $\mu$.
 Under $\mu$, this ratio is a martingale: the true environment does not, on average, favour any alternative $\nu$ over itself.
-Non-negativity plus the (super)martingale structure forces $X_{\nu,t}$ to converge (by Doob's theorem below), which is the engine behind the self-optimizing proof: it lets us separate environments that remain plausible ($X_{\nu,\infty} > 0$) from those that are eventually ruled out ($X_{\nu,\infty} = 0$), and handle each case differently in Problem~10.
+Non-negativity plus the (super)martingale structure forces $X_{\nu,t}$ to converge (by Doob's theorem below), which is the engine behind the self-optimizing proof: it lets us separate environments that remain plausible ($X_{\nu,\infty} > 0$) from those that are eventually ruled out ($X_{\nu,\infty} = 0$), and handle each case differently in \cref{prob:selfopt}.
 
 \begin{fact}[Doob's supermartingale convergence]\label{fact:doob}
 If $(X_t)_{t \geq 0}$ is a non-negative $\mu^\pi$-supermartingale, then there exists a function $X_\infty : \cH^\infty \to \mathbb{R}_{\geq 0}$ of the infinite history such that $X_t(\aes_{1:t}) \to X_\infty(\aes_{1:\infty})$ as $t \to \infty$, with $X_\infty(\aes_{1:\infty}) < \infty$, for $\mu^\pi$-almost every infinite history $\aes_{1:\infty}$.
