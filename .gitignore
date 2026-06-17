@@ -1,4 +1,5 @@
 # LaTeX build artifacts
+OLD/
 *.aux
 *.bbl
 *.bcf

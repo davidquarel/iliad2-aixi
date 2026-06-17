@@ -27,7 +27,7 @@ pdflatex "\def\HANDOUT{}\input{goalmisgen-slides}"   # handout (reveals collapse
 Decks that cite (`si_and_aixi_slides`, `goalmisgen-slides`) need a `bibtex <deck>` pass
 between two `pdflatex` runs; `vpg-slides` has no citations.
 
-**Worksheets** — `solomonoff-all`, `aixi-worksheet`: same `pdflatex` (run twice for cleveref).
+**Worksheets** — `solomonoff-worksheet`, `aixi-worksheet`: same `pdflatex` (run twice for cleveref).
 Toggle solutions with the `\solutionstrue` / `\solutionsfalse` line near the top of the `.tex`.
 
 **Notebooks** — regenerate the Colab notebooks from their `gen/masters/master_*.py` sources:

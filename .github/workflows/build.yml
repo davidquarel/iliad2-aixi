@@ -46,7 +46,7 @@ jobs:
         run: |
           set -euo pipefail
           # Worksheets: sol (solutions shown) + nosol (hidden)
-          for file in solomonoff-all aixi-worksheet; do
+          for file in solomonoff-worksheet aixi-worksheet; do
             sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionstrue/'  "$file.tex" > "$file-sol.tex"
             sed -E 's/^[[:space:]]*\\solutions(true|false)/\\solutionsfalse/' "$file.tex" > "$file-nosol.tex"
           done
@@ -62,7 +62,7 @@ jobs:
           # root_file just triggers the single image pull; the real work (the
           # full pdflatex -> bibtex -> pdflatex x2 sequence for EVERY target,
           # including this one) happens in post_compile, in the same container.
-          root_file: solomonoff-all-sol.tex
+          root_file: solomonoff-worksheet-sol.tex
           compiler: pdflatex
           args: -interaction=nonstopmode -halt-on-error -file-line-error
           post_compile: |
@@ -79,7 +79,7 @@ jobs:
             }
             fail=0
             for base in \
-              solomonoff-all-sol solomonoff-all-nosol \
+              solomonoff-worksheet-sol solomonoff-worksheet-nosol \
               aixi-worksheet-sol aixi-worksheet-nosol \
               si_and_aixi_slides-present si_and_aixi_slides-handout \
               vpg-slides-present vpg-slides-handout \
@@ -101,8 +101,8 @@ jobs:
           # each deploy and never expires). So keep artifacts the minimum time.
           retention-days: 1
           path: |
-            solomonoff-all-sol.pdf
-            solomonoff-all-nosol.pdf
+            solomonoff-worksheet-sol.pdf
+            solomonoff-worksheet-nosol.pdf
             aixi-worksheet-sol.pdf
             aixi-worksheet-nosol.pdf
             si_and_aixi_slides-present.pdf
@@ -205,7 +205,7 @@ jobs:
           # to a build matrix above.
           title_of() {
             case "$1" in
-              solomonoff-all)      echo "Solomonoff Induction Exercises" ;;
+              solomonoff-worksheet)        echo "Solomonoff Induction Exercises" ;;
               aixi-worksheet)      echo "AIXI Exercises" ;;
               si_and_aixi_slides) echo "Universal AI: Solomonoff Induction &amp; AIXI" ;;
               vpg-slides)          echo "Vanilla Policy Gradient" ;;
@@ -289,7 +289,7 @@ jobs:
             slide_row si_and_aixi_slides
             echo "</table>"
             echo "<h3>Worksheets</h3><table class=\"r\">"
-            worksheet_row solomonoff-all
+            worksheet_row solomonoff-worksheet
             worksheet_row aixi-worksheet
             echo "</table>"
 

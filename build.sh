@@ -19,6 +19,12 @@
 # own scratch directory so the parallel jobs never clobber each other's
 # intermediates. Output is buffered per job and printed atomically on completion.
 #
+# A named single source (./build.sh foo.tex) prints any LaTeX errors inline. A
+# full build (./build.sh, no args) ends with a pass/fail summary of every target;
+# failing targets leave a <target>.log. Logs are overwritten each run, never
+# appended — a target's .log holds only its most recent failure (and is removed
+# entirely once the target builds cleanly).
+#
 # On success, LaTeX aux junk (.log/.aux/.bbl/.toc/.nav/... — see AUX_EXTS) is
 # swept from the source dir, including foreign leftovers from manual pdflatex /
 # editor runs. Set BUILD_KEEP_AUX=1 to keep them. On failure, all artifacts are
@@ -26,8 +32,13 @@
 
 set -uo pipefail
 
-DEFAULT_WORKSHEETS=(solomonoff-all.tex aixi-worksheet.tex)
-DEFAULT_SLIDES=(si_and_aixi_slides.tex)
+DEFAULT_WORKSHEETS=(solomonoff-worksheet.tex aixi-worksheet.tex)
+DEFAULT_SLIDES=(si_and_aixi_slides.tex vpg-slides.tex goalmisgen-slides.tex)
+
+# 1 when a single source was named on the command line (errors are printed
+# inline for quick debugging); 0 for a full default build (errors go to the
+# per-target .log files and a pass/fail summary is printed at the end).
+SINGLE=0
 
 cd "$(dirname "$0")"
 
@@ -80,6 +91,12 @@ build_one() {
     local src="$1" kind="$2" variant="$3"
     local base="${src%.tex}"
     local pdf_out="${base}-${variant}.pdf"
+    local log_out="${base}-${variant}.log"
+
+    # Clear any log from a previous run up front: a log is (re)created only when
+    # this build fails, so it never accumulates across runs — a stale log can't
+    # outlive a now-passing target, and a failing one holds only the last errors.
+    rm -f "$log_out"
 
     {
         echo "=========================================="
@@ -137,8 +154,25 @@ build_one() {
             rm -rf "$work"
         else
             # Preserve the log next to the source so failures stay debuggable.
-            [ -f "$work/${job}.log" ] && cp -f "$work/${job}.log" "${job}.log"
-            echo "  !! build failed for $pdf_out (see ${job}.log)" >&2
+            # (cp -f overwrites; combined with the rm above the log only ever
+            # holds the most recent build's errors.)
+            [ -f "$work/${job}.log" ] && cp -f "$work/${job}.log" "$log_out"
+            if [ "$SINGLE" = "1" ]; then
+                # Single named source: surface the LaTeX errors inline so the
+                # user doesn't have to open the log. Show the error lines (and
+                # the offending source line); fall back to the log tail.
+                echo "  !! build failed for $pdf_out — LaTeX errors:" >&2
+                local errs=""
+                [ -f "$log_out" ] && errs="$(grep -nE '^(!|l\.[0-9]+|Runaway|Emergency stop)' "$log_out" | head -n 40)"
+                if [ -n "$errs" ]; then
+                    printf '%s\n' "$errs" >&2
+                elif [ -f "$log_out" ]; then
+                    tail -n 20 "$log_out" >&2
+                fi
+                echo "  (full log: $log_out)" >&2
+            else
+                echo "  !! build failed for $pdf_out (see $log_out)" >&2
+            fi
             rm -rf "$work"
             return 1
         fi
@@ -161,6 +195,7 @@ queue() {
 if [ $# -eq 0 ]; then
     for src in "${DEFAULT_WORKSHEETS[@]}" "${DEFAULT_SLIDES[@]}"; do queue "$src"; done
 else
+    SINGLE=1
     queue "$1"
 fi
 
@@ -178,14 +213,26 @@ done
 
 # Reap all jobs, print their buffered output in a stable order, track failures.
 rc=0
+declare -a ok_list=() fail_list=()
 for i in "${!pids[@]}"; do
-    if ! wait "${pids[$i]}"; then
+    if wait "${pids[$i]}"; then
+        ok_list+=("${labels[$i]}")
+    else
         rc=1
+        fail_list+=("${labels[$i]}")
     fi
     echo
     cat "${outfiles[$i]}"
     rm -f "${outfiles[$i]}"
 done
+
+# Final pass/fail summary: one line per target PDF, failures last.
+echo
+echo "=========================================="
+echo "  Build summary (${#ok_list[@]} ok, ${#fail_list[@]} failed)"
+echo "=========================================="
+[ "${#ok_list[@]}"   -gt 0 ] && printf '  ok    %s\n' "${ok_list[@]}"
+[ "${#fail_list[@]}" -gt 0 ] && printf '  FAIL  %s.log\n' "${fail_list[@]}"
 
 # Sweep LaTeX aux junk from the source dir on success. On failure, leave
 # everything (including any <job>.log copied out by build_one) for debugging.
