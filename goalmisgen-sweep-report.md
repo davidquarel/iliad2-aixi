@@ -74,8 +74,6 @@ Fixed 6x6 env, small net: 16 rollouts 68 ms (1 update) / 106 ms (4x4); 256 rollo
 
 ## 2. Sweeps
 
-(filled in as results arrive)
-
 ### Sweep 1: net4 (shifted-bin task), batch x reuse x lr, seed 1, entropy 0.01, shipped net
 
 All 32 configs reached >= 0.94 of oracle and passed the behaviour check. Steps to hold >= 0.95 of oracle
@@ -177,9 +175,11 @@ Steps to hold >= 0.95 of the oracle (farming oracle 27.4 for net1; clean-up orac
 | net1 | 256 | 1 x 1 | 0.001 | not in 1024 | 0.682 | True |
 | net1 | 256 | 1 x 1 | 0.003 | not in 1024 | 0.775 | True |
 | net1 | 1024 | 1 x 1 | 0.001 | not in 1024 | 0.333 | False |
+| net2 | 1024 | 8 x 4 | 0.003 | 80 | 0.998 | True |
 | net2 | 256 | 8 x 4 | 0.003 | 96 | 0.984 | True |
 | net2 | 256 | 4 x 4 | 0.003 | 160 | 0.991 | True |
 | net2 | 64 | 4 x 4 | 0.003 | 240 | 0.981 | True |
+| net2 | 1024 | 4 x 4 | 0.003 | 880 | 0.991 | True |
 | net2 | 64 | 1 x 1 | 0.001 | not in 1024 | 0.270 | False |
 | net2 | 64 | 1 x 1 | 0.003 | not in 1024 | 0.272 | False |
 | net2 | 64 | 4 x 4 | 0.001 | not in 1024 | 0.775 | False |
@@ -188,11 +188,16 @@ Steps to hold >= 0.95 of the oracle (farming oracle 27.4 for net1; clean-up orac
 | net2 | 256 | 1 x 1 | 0.001 | not in 1024 | 0.271 | False |
 | net2 | 256 | 1 x 1 | 0.003 | not in 1024 | 0.272 | False |
 | net2 | 256 | 4 x 4 | 0.001 | not in 1024 | 0.775 | False |
+| net2 | 256 | 8 x 4 | 0.001 | not in 1024 | 0.272 | False |
+| net2 | 1024 | 1 x 1 | 0.001 | not in 1024 | 0.272 | False |
+| net2 | 1024 | 1 x 1 | 0.003 | not in 1024 | 0.272 | False |
+| net2 | 1024 | 4 x 4 | 0.001 | not in 1024 | 0.775 | False |
+| net2 | 1024 | 8 x 4 | 0.001 | not in 1024 | 0.774 | False |
 
 Reading: the shipped single-update trainer is what limits these agents. With one update per batch,
 net1 never exceeds 78% of the farming optimum and net2 stays at 27% (one pile) for 1024 steps; with
 4-8 epochs and lr 3e-3, net1 reaches 99% in 48-64 steps and net2 reaches 98% (all four piles) in
-96-160 steps. lr 1e-3 with epochs gets net2 to 78% (three piles) at best. In the notebook's own words
+80-160 steps. lr 1e-3 with epochs gets net2 to 78% (three piles) at best. In the notebook's own words
 the old net2 'only reliably cleans up one pile of shards'; that was the optimiser, not the task.
 
 ### Sweep 3: net4 refinement (seeds, entropy, lr, clip, network) and net3 with the fast trainer
@@ -251,3 +256,146 @@ vs one smashed urn) and `env_wall` (shards sealed behind urns). With the new def
 rollouts, 8x4 epochs, lr 3e-3, compiled) for 512 steps, two seeds each: reward2, bin and break
 probes are all exactly 0 on both layouts. The claim stands; the policy settles on "avoid urns, do
 nothing", and the stronger optimiser does not push through the -2 moat either. No text change.
+
+### Sweep 4: minibatch structure (512 envs, lr 3e-3, compiled), net4 and net2
+
+| role | config | seed | steps to 0.95 | final ratio |
+|---|---|---|---|---|
+| net2 | 256 x 6 ep x 4 mb | 1 | not in 512 | 0.272 |
+| net2 | 256 x 6 ep x 4 mb | 2 | 80 | 0.988 |
+| net2 | 256 x 8 ep x 1 mb | 1 | not in 512 | 0.774 |
+| net2 | 256 x 8 ep x 1 mb | 2 | 304 | 0.981 |
+| net2 | 256 x 8 ep x 2 mb | 1 | not in 512 | 0.773 |
+| net2 | 256 x 8 ep x 2 mb | 2 | 512 | 0.996 |
+| net4 | 512 x 3 ep x 4 mb | 1 | 192 | 0.964 |
+| net4 | 512 x 3 ep x 4 mb | 2 | 176 | 0.964 |
+| net4 | 512 x 4 ep x 1 mb | 1 | not in 512 | 0.520 |
+| net4 | 512 x 4 ep x 1 mb | 2 | not in 512 | 0.433 |
+| net4 | 512 x 4 ep x 2 mb | 1 | 224 | 0.958 |
+| net4 | 512 x 4 ep x 2 mb | 2 | 272 | 0.949 |
+| net4 | 512 x 6 ep x 2 mb | 1 | 176 | 0.962 |
+| net4 | 512 x 6 ep x 2 mb | 2 | 160 | 0.952 |
+
+Reading: 4 epochs x 4 minibatches stays the best structure for net4 (one big minibatch per epoch fails to learn; 2 minibatches is slower). For net2 the structure matters less than the seed (see below).
+
+### Sweep 4b / 5: net2 across seeds, entropy 0.001-0.01, batch 256 vs 1024
+
+| rollouts | epochs x mb | entropy | seeds | reached 0.95 | steps (per seed) |
+|---|---|---|---|---|---|
+| 256 | 4 x 4 | 0.001 | 4 | 2/4 | stuck@0.77, 160, stuck@0.77, 112 |
+| 256 | 4 x 4 | 0.003 | 4 | 2/4 | stuck@0.77, 80, stuck@0.77, 112 |
+| 256 | 4 x 4 | 0.01 | 4 | 3/4 | stuck@0.77, 80, 160, 96 |
+| 256 | 8 x 2 | 0.001 | 4 | 2/4 | stuck@0.77, 128, 176, stuck@0.77 |
+| 256 | 8 x 4 | 0.001 | 4 | 3/4 | stuck@0.76, 80, 80, 80 |
+| 256 | 8 x 4 | 0.003 | 4 | 3/4 | 80, 352, stuck@0.77, 64 |
+| 256 | 8 x 4 | 0.01 | 4 | 4/4 | 96, 64, 352, 80 |
+| 1024 | 4 x 4 | 0.003 | 4 | 3/4 | 112, 112, stuck@0.77, 144 |
+| 1024 | 4 x 4 | 0.01 | 4 | 3/4 | 160, 96, stuck@0.77, 96 |
+| 1024 | 8 x 4 | 0.003 | 4 | 3/4 | 128, stuck@0.77, 64, 80 |
+| 1024 | 8 x 4 | 0.01 | 4 | 3/4 | 80, 112, 112, stuck@0.77 |
+
+Reading: about one run in four gets stuck at exactly 0.77 of the oracle = three piles of four (one run at one pile), regardless of batch size, epochs, or entropy up to 0.01, and it stays stuck to 512 steps. Once three piles are binned the near-deterministic policy never explores its way to the far fourth pile.
+
+### Sweep 6: escaping the three-pile trap (net2, 256 rollouts, 8 x 4, lr 3e-3)
+
+| variant | pass | steps to 0.95 per seed | final ratio | drop probe |
+|---|---|---|---|---|
+| ent0.01_mid | 4/4 | 64, 64, 80, 48 | 0.993-0.997 | 0.00-0.05 |
+| ent0.03_mid | 4/4 | 64, 64, 64, 64 | 0.987-0.992 | 0.02-0.07 |
+| ent0.03_small | 4/4 | 80, 64, 96, 80 | 0.984-0.996 | 0.02-0.06 |
+| ent0.1_mid | 1/4 | 96, 112, 96, 96 | 0.966-0.977 | 0.11-0.34 |
+| ent0.1_small | 0/4 | 96, 80, 128, 144 | 0.966-0.974 | 0.16-0.27 |
+| sched0.03to0.001 | 3/4 | 80, 64, -, 80 | 0.774-0.994 | 0.00-0.03 |
+| sched0.1to0.001 | 3/4 | 80, 64, 128, 80 | 0.980-0.986 | 0.02-0.18 |
+
+(`mid` = 16ch/64w/3conv/2dense network instead of the shipped 8/16/2/1; `sched` = entropy annealed linearly to 0.001.)
+
+Reading: a constant entropy bonus of 0.03 removes the trap with the shipped network (4/4, 64-96 steps, return 98-99.6% of optimum, drops <= 0.06). 0.1 is too noisy (drop probe 0.16-0.34, return 97%). Annealing schedules are no better than the constant (3/4). A bigger net at 0.01 also works (4/4) but would change student-visible code, so 0.03 with the shipped net is adopted.
+
+### Sweep 7: confirming entropy 0.03 for the fixed-layout trainer
+
+| role | entropy | seeds | steps to 0.95 | final ratio | behaviour |
+|---|---|---|---|---|---|
+| net1 | 0.01 | [1, 2, 3, 4] | 64, 48, 48, 48 | 0.961-0.997 | farms: drop share 0.97-0.98, never bins |
+| net1 | 0.03 | [1, 2, 3, 4] | 64, 64, 64, 64 | 0.952-0.966 | farms: drop share 0.98-0.98, never bins |
+| net2 | 0.03 | [5, 6, 7, 8] | 64, 128, 64, 80 | 0.976-0.994 | drops 0.00-0.15, breaks <= 0.018 |
+
+Reading: at 0.03, net1 still farms at 95-97% of the farming optimum in 64 steps (0.01: 96-99.7%), and net2 passes on seeds 5-8 as well (8/8 overall, worst case 128 steps). Budgets: net1 64 steps, net2 192 steps (1.5x the worst seed).
+
+## 5. Final configuration and end-to-end result
+
+Adopted defaults (all in `ppo.py`; the notebook's training loops pass only net, env, reward,
+optimiser, discount and generator, and the two `ActorCriticNetwork.init` cells are unchanged):
+
+| | fixed layout (`ppo_train_step`) | procedural (`ppo_train_step_multienv`) |
+|---|---|---|
+| parallel rollouts / envs per step | 256 | 512 (set in the notebook's loop) |
+| update epochs x minibatches | 8 x 4 | 4 x 4 |
+| learning rate (notebook, Adam) | 3e-3 | 3e-3 |
+| entropy coefficient | 0.03 | 0.01 |
+| rollouts | compiled CUDA-graph step, eager fallback | same |
+| clip eps / GAE lambda / critic coeff / grad norm | 0.1 / 0.95 / 0.5 / 0.5 (unchanged) | unchanged |
+
+Step budgets: net1 96, net2 192, net3 160, net4 192 (each >= 1.5x the worst seed seen).
+
+The regenerated `solutions.py` run as a script (four trainings, every test, all evaluations and plots),
+alone on one RTX A4000, with the notebook's own seeds:
+
+| | before (branch, A40 under load) | before (original, A40) | **now (A4000)** |
+|---|---|---|---|
+| whole notebook | ~10 min | ~16 min, net4 a coin flip | **96 s** |
+
+| agent | result | oracle ratio |
+|---|---|---|
+| net1 | farms: drop probe 26.5 of return 27.2, never bins, never breaks | 0.995 |
+| net2 | cleans all four piles: bin probe 3.59, drops 0.02, breaks 0.001 | 0.998 |
+| net3 | in-distribution 0.989 of oracle; on shifted layouts bins in 6%, proxy 0.79; on `env_shift` bins 0%, proxy 0.98 | misgeneralises |
+| net4 | on shifted layouts bins in 100%; on `env_shift` bins 100%, proxy 0.00 | 0.971 |
+
+Two independent end-to-end runs on different GPUs gave bit-identical results (the compiled path
+seeds the device RNG from the notebook's generator), so the demonstration is now reproducible as
+well as fast.
+
+CPU fallback (no GPU, 4 threads, eager rollouts): fixed-layout step 0.64 s, procedural step 1.2 s,
+so about 1 min for net1, 2 min for net2, 3.2 min for net3, 3.8 min for net4 (~10 min total).
+
+## 6. Changes on the branch
+
+`gen/support/part6_goalmisgen/ppo.py`
+- Multi-epoch minibatch updates (from the earlier commit) with the tuned defaults above.
+- `collect_annotated_rollout_fast`: compiled CUDA-graph rollout step with eager fallback;
+  `compile_rollouts=True` by default.
+- Optional entropy annealing (`entropy_coeff_final` + `progress`), off by default; tested, not
+  needed, kept as a knob.
+
+`gen/masters/master_2_6.py`
+- `train_agent` / `train_agent_multienv`: hyperparameter blocks removed (defaults in `ppo.py`),
+  lr 3e-3, 512 envs per step; step budgets 96 / 192 / 160 / 192; prose about training time, the
+  net4 plateau, and the "How are we training the agent?" dropdown updated.
+- Bonus: the "tune the agent" bullet (which assumed net2 cleans one pile) replaced by a "break the
+  agent" bullet that has students reproduce the old behaviour by weakening the optimiser.
+
+Not changed: environment, reward functions, network architectures, discount, horizon, the
+misgeneralisation set-up, the tests, and everything the students write.
+
+## 7. Caveats
+
+- Timings are for an RTX A4000. A Colab T4 is similar-class; the compiled rollout removes most
+  of the launch overhead that made the old loop slow, so the ~1.5 min total should transfer,
+  plus ~5-10 s of one-off compile time per batch shape. Not verified on Colab itself.
+- `torch.compile` needs triton (present on Colab GPU runtimes). Any failure falls back to eager
+  rollouts with a printed note; nothing else changes.
+- With the compiled path the rollout RNG is the device generator seeded from the notebook's
+  generator each rollout, so CPU and GPU runs of the same seed differ (they already did).
+- The three-pile trap for net2 is real: with entropy <= 0.01 about one seed in four stalls at
+  three piles. 0.03 fixed it on 8/8 seeds; if a student lowers the entropy they may see it.
+
+## 8. Reproducing
+
+```
+PYTHONPATH=gen/support python3 gen/support/part6_goalmisgen/tests.py
+python3 gen/core/main.py --chapters=2.6 --use_py=true
+```
+Sweep/oracle/evaluation scripts (`oracle.py`, `evalh.py`, `sweep.py`, `launcher.py`, `summarise.py`,
+`compile_probe*.py`) lived in the session scratch directory and are not committed; the tables above
+are their output.
