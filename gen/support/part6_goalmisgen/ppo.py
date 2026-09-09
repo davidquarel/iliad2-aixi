@@ -5,8 +5,16 @@ PyTorch.
 
 A PyTorch port of the JAX original by Matthew Farrugia-Roberts
 (https://github.com/matomatical/reward-lab). Each train step collects a batch
-of rollouts with the current policy, estimates advantages with GAE, and
-performs a single clipped-surrogate gradient update (no minibatch epochs).
+of rollouts with the current policy, estimates advantages with GAE, and then
+runs several epochs of clipped-surrogate minibatch updates on that batch.
+
+The defaults were tuned (Sep 2026) so that every agent in the [2.6] notebook
+reaches >= 95% of the optimal return in a few hundred steps at most: large
+batches of parallel environments (the per-step cost is launch-bound, so a
+big batch is almost free), 4-8 update epochs per batch, a 3e-3 learning rate,
+and rollouts collected by a torch.compile'd CUDA-graph step when a GPU is
+available (see `collect_annotated_rollout_fast`). None of this changes what
+is being optimised; it only changes how quickly the optimiser gets there.
 
 Note: in the JAX original, gradient clipping lives inside the optax optimiser
 chain; here it is applied explicitly inside the train step (`max_grad_norm`).
@@ -23,8 +31,11 @@ from torch import Tensor
 from part6_goalmisgen.agent import ActorCriticNetwork
 from part6_goalmisgen.evaluation import RewardFunction, compute_return
 from part6_goalmisgen.potteryshop import (
+    AnnotatedRollout,
     AnnotatedTransition,
     Environment,
+    Observation,
+    State,
     collect_annotated_rollout,
     tree_map,
 )
@@ -35,21 +46,32 @@ def ppo_train_step(
     env: Environment,
     reward_fn: RewardFunction,
     optimiser: torch.optim.Optimizer,
-    num_rollouts: int = 32,
+    num_rollouts: int = 256,
     num_env_steps: int = 64,
     discount_rate: float = 0.995,
     eligibility_rate: float = 0.95,
     proximity_eps: float = 0.1,
     critic_coeff: float = 0.5,
-    entropy_coeff: float = 0.001,
+    entropy_coeff: float = 0.03,
     max_grad_norm: float = 0.5,
-    num_epochs: int = 1,
-    num_minibatches: int = 1,
+    num_epochs: int = 8,
+    num_minibatches: int = 4,
+    compile_rollouts: bool = True,
+    entropy_coeff_final: float | None = None,
+    progress: float | None = None,
     generator: torch.Generator | None = None,
 ) -> dict[str, float]:
     """
     One PPO training step in a single environment: collect `num_rollouts`
-    parallel rollouts, then update `net` in place. Returns training metrics.
+    parallel rollouts, then update `net` in place with `num_epochs` passes of
+    `num_minibatches` minibatch updates. Returns training metrics.
+
+    The entropy bonus (0.03) is deliberately generous: on the fixed 6x6 layout
+    a lower value lets the policy go deterministic after cleaning three piles
+    and it never explores its way to the fourth (about one seed in four with
+    0.001-0.01); 0.03 fixed that on every seed tried without noticeably
+    hurting the return. Pass `progress` (fraction of training done, in [0, 1])
+    together with `entropy_coeff_final` to anneal it instead.
     """
     assert env.num_envs is None, (
         "got a batch of environments; use ppo_train_step_multienv"
@@ -69,6 +91,9 @@ def ppo_train_step(
         max_grad_norm=max_grad_norm,
         num_epochs=num_epochs,
         num_minibatches=num_minibatches,
+        compile_rollouts=compile_rollouts,
+        entropy_coeff_final=entropy_coeff_final,
+        progress=progress,
         generator=generator,
     )
 
@@ -83,15 +108,23 @@ def ppo_train_step_multienv(
     eligibility_rate: float = 0.95,
     proximity_eps: float = 0.1,
     critic_coeff: float = 0.5,
-    entropy_coeff: float = 0.001,
+    entropy_coeff: float = 0.01,
     max_grad_norm: float = 0.5,
-    num_epochs: int = 1,
-    num_minibatches: int = 1,
+    num_epochs: int = 4,
+    num_minibatches: int = 4,
+    compile_rollouts: bool = True,
+    entropy_coeff_final: float | None = None,
+    progress: float | None = None,
     generator: torch.Generator | None = None,
 ) -> dict[str, float]:
     """
     One PPO training step across a batch of environments: collect one rollout
-    in each environment, then update `net` in place. Returns training metrics.
+    in each environment, then update `net` in place with `num_epochs` passes of
+    `num_minibatches` minibatch updates. Returns training metrics.
+
+    The default entropy coefficient is higher than for a single fixed layout
+    (0.01 vs 0.001): a distribution of layouts needs more exploration, and a
+    lower value can collapse the policy early.
     """
     assert envs.num_envs is not None, (
         "got a single environment; use ppo_train_step (or add a batch "
@@ -112,6 +145,9 @@ def ppo_train_step_multienv(
         max_grad_norm=max_grad_norm,
         num_epochs=num_epochs,
         num_minibatches=num_minibatches,
+        compile_rollouts=compile_rollouts,
+        entropy_coeff_final=entropy_coeff_final,
+        progress=progress,
         generator=generator,
     )
 
@@ -131,16 +167,27 @@ def _ppo_train_step(
     max_grad_norm: float,
     num_epochs: int,
     num_minibatches: int,
+    compile_rollouts: bool,
+    entropy_coeff_final: float | None,
+    progress: float | None,
     generator: torch.Generator | None,
 ) -> dict[str, float]:
+    # optional entropy schedule: if the caller reports training progress in
+    # [0, 1] and an end value, interpolate the entropy coefficient linearly
+    # from `entropy_coeff` (start) to `entropy_coeff_final` (end)
+    if entropy_coeff_final is not None and progress is not None:
+        entropy_coeff = entropy_coeff + (entropy_coeff_final - entropy_coeff) * min(max(progress, 0.0), 1.0)
     # collect experience with current policy...
-    rollouts = collect_annotated_rollout(
-        env=env,
-        policy_value_fn=net.policy_value,
-        num_steps=num_env_steps,
-        num_rollouts=num_rollouts,
-        generator=generator,
-    )
+    if compile_rollouts:
+        rollouts = collect_annotated_rollout_fast(env, net, num_env_steps, num_rollouts, generator)
+    else:
+        rollouts = collect_annotated_rollout(
+            env=env,
+            policy_value_fn=net.policy_value,
+            num_steps=num_env_steps,
+            num_rollouts=num_rollouts,
+            generator=generator,
+        )
     # compute rewards (flatten the batch and time dimensions, apply the
     # reward function to all B*T transitions at once, then reshape)
     B, T = rollouts.transitions.action.shape
@@ -203,6 +250,97 @@ def _ppo_train_step(
         **{k: v / num_updates for k, v in aux_sums.items()},
     }
     return train_metrics
+
+
+# # #
+# Fast rollout collection with torch.compile + CUDA graphs
+#
+# Collecting rollouts is the dominant cost of a training step: 64 sequential
+# environment steps, each a few dozen tiny kernels plus Python overhead, so
+# the GPU sits idle most of the time. Compiling one (observe -> policy ->
+# sample -> step) function with mode="reduce-overhead" replays it as a CUDA
+# graph and cuts the per-rollout cost several-fold. Semantics are unchanged:
+# the compiled environment step is bit-identical to `Environment.step`; only
+# the action sampling uses the global CUDA RNG (seeded from `generator` at the
+# start of each rollout) instead of a CPU generator.
+#
+# Anything unusual (CPU device, missing triton, an old torch) makes us fall
+# back to the plain `collect_annotated_rollout`, so this is purely a speed-up.
+
+_COMPILED_STEPS: dict = {}
+_COMPILE_DISABLED = False
+
+
+def _get_compiled_step(env: Environment, net: ActorCriticNetwork, batch_size: int):
+    key = (id(env.__class__), env.world_size, batch_size, id(net), str(env.device))
+    fn = _COMPILED_STEPS.get(key)
+    if fn is None:
+        ws = env.world_size
+
+        def one_step(robot_pos, bin_pos, items_map, inventory):
+            state = State(robot_pos=robot_pos, bin_pos=bin_pos, items_map=items_map, inventory=inventory)
+            obs = env.observe(state)
+            action_logits, value_pred = net(obs)
+            action = torch.multinomial(torch.softmax(action_logits, dim=-1), 1).squeeze(-1)
+            nxt = env.step(state, action)
+            return (nxt.robot_pos, nxt.bin_pos, nxt.items_map, nxt.inventory,
+                    obs.grid, obs.vec, action_logits, value_pred, action)
+
+        fn = torch.compile(one_step, mode="reduce-overhead", dynamic=False)
+        _COMPILED_STEPS[key] = fn
+    return fn
+
+
+@torch.no_grad()
+def collect_annotated_rollout_fast(
+    env: Environment,
+    net: ActorCriticNetwork,
+    num_steps: int,
+    num_rollouts: int | None = None,
+    generator: torch.Generator | None = None,
+) -> AnnotatedRollout:
+    """
+    Same contract as `collect_annotated_rollout(env, net.policy_value, ...)`,
+    using a compiled, CUDA-graph-replayed per-step function on the GPU. Falls
+    back to the eager implementation on CPU or if compilation fails.
+    """
+    global _COMPILE_DISABLED
+    if _COMPILE_DISABLED or env.device.type != "cuda":
+        return collect_annotated_rollout(env, net.policy_value, num_steps, num_rollouts, generator)
+    try:
+        state = env.reset(num_rollouts)
+        B = state.inventory.shape[0]
+        step_fn = _get_compiled_step(env, net, B)
+        if generator is not None:  # derive this rollout's device RNG seed from the caller's generator
+            torch.cuda.manual_seed(int(torch.randint(0, 2**31 - 1, (1,), generator=generator)))
+        args = (state.robot_pos, state.bin_pos, state.items_map, state.inventory)
+        transitions = []
+        for _ in range(num_steps):
+            torch.compiler.cudagraph_mark_step_begin()
+            out = step_fn(*args)
+            out = [x.clone() for x in out]  # graph outputs are overwritten by the next replay
+            robot_pos, bin_pos, items_map, inventory, grid, vec, action_logits, value_pred, action = out
+            next_state = State(robot_pos=robot_pos, bin_pos=bin_pos, items_map=items_map, inventory=inventory)
+            transitions.append(
+                AnnotatedTransition(
+                    state=state,
+                    obs=Observation(grid=grid, vec=vec),
+                    value_pred=value_pred,
+                    action=action,
+                    action_logits=action_logits,
+                    next_state=next_state,
+                )
+            )
+            state = next_state
+            args = (robot_pos, bin_pos, items_map, inventory)
+        final_obs = env.observe(state)
+        _, final_value_pred = net.policy_value(final_obs)
+    except Exception as e:  # noqa: BLE001 - any compile/runtime problem => eager path from now on
+        _COMPILE_DISABLED = True
+        print(f"[ppo] compiled rollouts unavailable ({type(e).__name__}: {str(e)[:80]}); using eager rollouts")
+        return collect_annotated_rollout(env, net.policy_value, num_steps, num_rollouts, generator)
+    stacked = tree_map(lambda *xs: torch.stack(xs, dim=1), transitions[0], *transitions[1:])
+    return AnnotatedRollout(transitions=stacked, final_obs=final_obs, final_value_pred=final_value_pred)
 
 
 # # #

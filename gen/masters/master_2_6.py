@@ -484,7 +484,7 @@ Next, let's apply a reinforcement learning algorithm to see what behaviours the 
 
 <details>
 <summary>How are we training the agent? (Optional) </summary>
-The provided module `part6_goalmisgen/ppo.py` implements a function `ppo_train_step` that collects some rollouts and trains an agent network on these using a reinforcement learning algorithm — a simplified form of the proximal policy optimisation algorithm you implemented in [2.3] (GAE advantages and the clipped-surrogate objective; `train_agent` below does a single gradient update per batch of rollouts, while the multi-environment trainer in section 4 reuses each batch for a few epochs of minibatch updates). You're welcome to read it, but you don't need to: today it's just infrastructure.
+The provided module `part6_goalmisgen/ppo.py` implements a function `ppo_train_step` that collects some rollouts and trains an agent network on these using a reinforcement learning algorithm — a simplified form of the proximal policy optimisation algorithm you implemented in [2.3] (GAE advantages, the clipped-surrogate objective, several epochs of minibatch updates per batch of rollouts, and rollouts collected by a compiled CUDA-graph step when a GPU is available). All of its hyperparameters have sensible defaults tuned for today's environments, so the training loops below only pass the network, environment, reward function and optimiser. You're welcome to read it, but you don't need to: today it's just infrastructure.
 </details>
 
 Here is a function that wraps `ppo_train_step` into a training loop, with a live plot of the mean return per training step:
@@ -498,14 +498,14 @@ def train_agent(
     env: Environment,
     net: ActorCriticNetwork,
     reward_fn: RewardFunction,
-    num_train_steps: int = 512,
-    num_train_steps_per_vis: int = 8,
+    num_train_steps: int = 128,
+    num_train_steps_per_vis: int = 4,
     seed: int = 42,
 ) -> ActorCriticNetwork:
     generator = t.Generator().manual_seed(seed)
     net = net.to(device)
     env = env.to(device)
-    optimiser = t.optim.Adam(net.parameters(), lr=0.001)
+    optimiser = t.optim.Adam(net.parameters(), lr=0.003)
 
     liveplot = LiveSubplots(["return"], num_train_steps)
     for step in tqdm(range(num_train_steps)):
@@ -514,15 +514,7 @@ def train_agent(
             env=env,
             reward_fn=reward_fn,
             optimiser=optimiser,
-            # ppo step hyperparameters
-            num_rollouts=16,
-            num_env_steps=64,
             discount_rate=DISCOUNT_RATE,
-            eligibility_rate=0.95,
-            proximity_eps=0.1,
-            critic_coeff=0.5,
-            entropy_coeff=0.001,
-            max_grad_norm=0.5,
             generator=generator,
         )
         liveplot.log(step, {"return": metrics["return"]})
@@ -545,7 +537,7 @@ a logit vector across actions, from which we can recover a policy, and the criti
 
 2. We'll then call the training function with this network, your manually-instantiated environment from section 1, and the above reward function.
 
-Training should be relatively quick even with a free Colab GPU.
+Training takes well under a minute on a Colab GPU.
 '''
 
 # ! CELL TYPE: code
@@ -567,7 +559,7 @@ net1 = train_agent(
     env=env,
     net=net1,
     reward_fn=reward1,
-    num_train_steps=256,
+    num_train_steps=96,
 )
 
 # ! CELL TYPE: markdown
@@ -1368,7 +1360,7 @@ Your next task is to bring together the previous exercises to eliminate specific
 
 
 2. Train a new network, using the same environment, agent architecture, and hyperparameters as last time, but this time using the new reward function 
-    * we recommend `num_train_steps=512` this time, since the shaped reward takes a little longer to master.
+    * we recommend `num_train_steps=192` this time, since the shaped reward takes a little longer to master.
 
 
 3. Inspect some rollouts, manually and/or by using your evaluation reward function probes, to confirm that the agent now behaves as intended.
@@ -1414,7 +1406,7 @@ net2 = train_agent(
     env=env,
     net=net2,
     reward_fn=reward2,
-    num_train_steps=512,
+    num_train_steps=192,
 )
 
 # ! CELL TYPE: code
@@ -1733,35 +1725,23 @@ def train_agent_multienv(
     gen: Callable[[int, t.Generator], Environment],
     net: ActorCriticNetwork,
     reward_fn: RewardFunction,
-    num_train_steps: int = 512,
+    num_train_steps: int = 192,
     num_train_steps_per_vis: int = 8,
     seed: int = 42,
 ) -> ActorCriticNetwork:
     generator = t.Generator().manual_seed(seed)
     net = net.to(device)
-    optimiser = t.optim.Adam(net.parameters(), lr=0.001)
+    optimiser = t.optim.Adam(net.parameters(), lr=0.003)
 
     liveplot = LiveSubplots(["return"], num_train_steps)
     for step in tqdm(range(num_train_steps)):
-        envs = gen(num_envs=128, generator=generator).to(device)
+        envs = gen(num_envs=512, generator=generator).to(device)
         metrics = ppo_train_step_multienv(
             net=net,
             envs=envs,
             reward_fn=reward_fn,
             optimiser=optimiser,
-            # ppo step hyperparameters
-            num_env_steps=64,
             discount_rate=DISCOUNT_RATE,
-            eligibility_rate=0.95,
-            proximity_eps=0.1,
-            critic_coeff=0.5,
-            entropy_coeff=0.01,  # needs more exploration
-            max_grad_norm=0.5,
-            # reuse each batch of rollouts for several minibatch updates: this is
-            # what makes the harder, procedurally generated tasks learnable in a
-            # few hundred steps rather than a few thousand
-            num_epochs=4,
-            num_minibatches=4,
             generator=generator,
         )
         liveplot.log(step, {"return": metrics["return"]})
@@ -1775,10 +1755,9 @@ def train_agent_multienv(
 # ! TAGS: []
 
 r'''
-Learning to solve a distribution of environments is more challenging than learning an individual environment, so we'll use a smaller world, a slightly larger policy network, many more parallel environments per step, and several update epochs per batch of rollouts. 
+Learning to solve a distribution of environments is more challenging than learning an individual environment, so we'll use a smaller world, a slightly larger policy network, many more parallel environments per step, and a slightly longer training run. 
 
-Colab users: Now would be the time to switch over to a GPU runtime if you've not
-done so already. Expect the training to otherwise run pretty slow on CPU only.
+Colab users: if you are not on a GPU runtime yet, now is the time to switch (the runs below take a minute or two on a GPU, but many minutes on CPU).
 '''
 
 # ! CELL TYPE: code
@@ -1807,8 +1786,8 @@ net3 = train_agent_multienv(
     ),
     net=net3,
     reward_fn=reward2,
-    num_train_steps=512,
-    num_train_steps_per_vis=16,
+    num_train_steps=160,
+    num_train_steps_per_vis=8,
     seed=1,
 )
 
@@ -2201,7 +2180,7 @@ display_envs(
 r'''
 ## Training out of distribution
 
-In principle, an easy way to fix goal misgeneralisation is to train a policy in a broader distribution of levels, like that generated by `generate_shift` as opposed to `generate`. If we train a new policy using this new environment generator, we should see goal misgeneralisation decrease. This task is harder than the last one (the agent now has to *find* the bin rather than always heading for the corner): expect the return to sit near zero for the first ~200 steps before climbing sharply (about 4 minutes on a Colab GPU in total). If your return curve hasn't taken off by the end, train for a few hundred more steps before drawing conclusions.
+In principle, an easy way to fix goal misgeneralisation is to train a policy in a broader distribution of levels, like that generated by `generate_shift` as opposed to `generate`. If we train a new policy using this new environment generator, we should see goal misgeneralisation decrease. This task is harder than the last one (the agent now has to *find* the bin rather than always heading for the corner): expect the return to sit near zero for the first ~100 steps before climbing sharply. If your return curve hasn't taken off by the end, train for another hundred steps or so before drawing conclusions.
 '''
 
 # ! CELL TYPE: code
@@ -2230,8 +2209,8 @@ net4 = train_agent_multienv(
     ),
     net=net4,
     reward_fn=reward2,
-    num_train_steps=512,
-    num_train_steps_per_vis=16,
+    num_train_steps=192,
+    num_train_steps_per_vis=8,
     seed=1,
 )
 
@@ -2370,7 +2349,7 @@ penalty the optimiser is busy learning to avoid.**
 
 </details>
 
-* **Tune the agent.** Our `reward2` agent only reliably cleans up one pile of shards in the fixed layout. Play with the architecture, training length, entropy coefficient, and learning rate to see how much better you can do. Can you get an agent that reliably clears the whole shop?
+* **Break the agent.** Our `reward2` agent clears essentially the whole shop in the fixed layout. The trainer in `part6_goalmisgen/ppo.py` gets there by reusing each batch of rollouts for several epochs of minibatch updates with a fairly high learning rate (see its defaults). Pass `num_epochs=1, num_minibatches=1` and/or a learning rate of `0.001` to `ppo_train_step` and retrain: how many piles does the agent clean now, and how much longer does it take? (A single update per batch and lr 0.001 typically gets stuck cleaning one pile.)
 
 * **Other shaping potentials.** The inventory potential is the simplest useful potential. Try a distance-based potential (e.g. negative distance from the robot to the nearest shards while empty-handed, or to the bin while loaded). Does it speed up learning? Does it stay un-hackable, as the theory guarantees?
 
