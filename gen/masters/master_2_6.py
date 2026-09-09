@@ -135,6 +135,8 @@ Theoretical and open-ended extensions: proving that potential shaping preserves 
 
 r'''
 ## Setup code
+
+> **Colab users:** select a GPU runtime before running anything (*Runtime → Change runtime type → GPU*). The code below picks up a GPU automatically if one is available; the later training runs are several times slower on CPU.
 '''
 
 # ! CELL TYPE: code
@@ -206,6 +208,12 @@ from part6_goalmisgen.util import (
 )
 
 device = t.device("cuda" if t.cuda.is_available() else "mps" if t.backends.mps.is_available() else "cpu")
+
+# On CPU, training is 64 sequential environment steps on tiny tensors per rollout, so PyTorch's
+# default of one thread per core only adds synchronisation overhead (a 48-core box trains ~9x
+# slower with the default than with 4 threads). This has no effect when running on a GPU.
+if device.type == "cpu" and t.get_num_threads() > 4:
+    t.set_num_threads(4)
 
 # FILTERS: py
 MAIN = __name__ == "__main__"
@@ -476,7 +484,7 @@ Next, let's apply a reinforcement learning algorithm to see what behaviours the 
 
 <details>
 <summary>How are we training the agent? (Optional) </summary>
-The provided module `part6_goalmisgen/ppo.py` implements a function `ppo_train_step` that collects some rollouts and trains an agent network on these using a reinforcement learning algorithm — a simplified form of the proximal policy optimisation algorithm you implemented in [2.3] (one clipped-surrogate gradient update per batch of rollouts, with GAE advantages; no minibatch epochs). You're welcome to read it, but you don't need to: today it's just infrastructure.
+The provided module `part6_goalmisgen/ppo.py` implements a function `ppo_train_step` that collects some rollouts and trains an agent network on these using a reinforcement learning algorithm — a simplified form of the proximal policy optimisation algorithm you implemented in [2.3] (GAE advantages and the clipped-surrogate objective; `train_agent` below does a single gradient update per batch of rollouts, while the multi-environment trainer in section 4 reuses each batch for a few epochs of minibatch updates). You're welcome to read it, but you don't need to: today it's just infrastructure.
 </details>
 
 Here is a function that wraps `ppo_train_step` into a training loop, with a live plot of the mean return per training step:
@@ -1514,7 +1522,6 @@ Let's see how your policy generalises:
 
 # EXERCISE
 # env2 = ...
-#
 # # YOUR CODE HERE - display a rollout of net2 in env2, like in section 2
 # END EXERCISE
 # SOLUTION
@@ -1736,7 +1743,7 @@ def train_agent_multienv(
 
     liveplot = LiveSubplots(["return"], num_train_steps)
     for step in tqdm(range(num_train_steps)):
-        envs = gen(num_envs=32, generator=generator).to(device)
+        envs = gen(num_envs=128, generator=generator).to(device)
         metrics = ppo_train_step_multienv(
             net=net,
             envs=envs,
@@ -1750,6 +1757,11 @@ def train_agent_multienv(
             critic_coeff=0.5,
             entropy_coeff=0.01,  # needs more exploration
             max_grad_norm=0.5,
+            # reuse each batch of rollouts for several minibatch updates: this is
+            # what makes the harder, procedurally generated tasks learnable in a
+            # few hundred steps rather than a few thousand
+            num_epochs=4,
+            num_minibatches=4,
             generator=generator,
         )
         liveplot.log(step, {"return": metrics["return"]})
@@ -1763,9 +1775,9 @@ def train_agent_multienv(
 # ! TAGS: []
 
 r'''
-Learning to solve a distribution of environments is more challenging than learning an individual environment, so we'll use a smaller world, a slightly larger policy network, and a longer training time. 
+Learning to solve a distribution of environments is more challenging than learning an individual environment, so we'll use a smaller world, a slightly larger policy network, many more parallel environments per step, and several update epochs per batch of rollouts. 
 
-Colab users: Now would be the time to switch over to a GPU or TPU runtime if you've not
+Colab users: Now would be the time to switch over to a GPU runtime if you've not
 done so already. Expect the training to otherwise run pretty slow on CPU only.
 '''
 
@@ -1795,8 +1807,8 @@ net3 = train_agent_multienv(
     ),
     net=net3,
     reward_fn=reward2,
-    num_train_steps=4096,
-    num_train_steps_per_vis=128,
+    num_train_steps=512,
+    num_train_steps_per_vis=16,
     seed=1,
 )
 
@@ -1968,7 +1980,6 @@ Your next task is to line up the elements of this definition with our case of go
 
 # EXERCISE
 # env_shift = ...
-#
 # def proxy(state: State, action: Int[Tensor, "B"], next_state: State) -> Float[Tensor, "B"]:
 #     raise NotImplementedError()
 # END EXERCISE
@@ -2011,8 +2022,6 @@ def proxy(state: State, action: Int[Tensor, "B"], next_state: State) -> Float[Te
 # test_env_shift checks only the structural requirements; test_proxy accepts the
 # canonical (0,0)-corner proxy that this exercise steers towards. A student who
 # encodes the same behavioural objective a different way can just eyeball the result.
-# #CLAUDE: kept both tests (they pass for the reference and give useful feedback);
-# resolved the "remove this test" TODO by documenting the non-uniqueness instead.
 if MAIN:
     tests.test_env_shift(env_shift)
     tests.test_proxy(proxy)
@@ -2192,7 +2201,7 @@ display_envs(
 r'''
 ## Training out of distribution
 
-In principle, an easy way to fix goal misgeneralisation is to train a policy in a broader distribution of levels, like that generated by `generate_shift` as opposed to `generate`. If we train a new policy using this new environment generator, we should see goal misgeneralisation decrease (this is another ~5 minute training run):
+In principle, an easy way to fix goal misgeneralisation is to train a policy in a broader distribution of levels, like that generated by `generate_shift` as opposed to `generate`. If we train a new policy using this new environment generator, we should see goal misgeneralisation decrease. This task is harder than the last one (the agent now has to *find* the bin rather than always heading for the corner): expect the return to sit near zero for the first ~200 steps before climbing sharply (about 4 minutes on a Colab GPU in total). If your return curve hasn't taken off by the end, train for a few hundred more steps before drawing conclusions.
 '''
 
 # ! CELL TYPE: code
@@ -2221,8 +2230,8 @@ net4 = train_agent_multienv(
     ),
     net=net4,
     reward_fn=reward2,
-    num_train_steps=4096,
-    num_train_steps_per_vis=128,
+    num_train_steps=512,
+    num_train_steps_per_vis=16,
     seed=1,
 )
 

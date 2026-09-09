@@ -43,6 +43,8 @@ def ppo_train_step(
     critic_coeff: float = 0.5,
     entropy_coeff: float = 0.001,
     max_grad_norm: float = 0.5,
+    num_epochs: int = 1,
+    num_minibatches: int = 1,
     generator: torch.Generator | None = None,
 ) -> dict[str, float]:
     """
@@ -65,6 +67,8 @@ def ppo_train_step(
         critic_coeff=critic_coeff,
         entropy_coeff=entropy_coeff,
         max_grad_norm=max_grad_norm,
+        num_epochs=num_epochs,
+        num_minibatches=num_minibatches,
         generator=generator,
     )
 
@@ -81,6 +85,8 @@ def ppo_train_step_multienv(
     critic_coeff: float = 0.5,
     entropy_coeff: float = 0.001,
     max_grad_norm: float = 0.5,
+    num_epochs: int = 1,
+    num_minibatches: int = 1,
     generator: torch.Generator | None = None,
 ) -> dict[str, float]:
     """
@@ -104,6 +110,8 @@ def ppo_train_step_multienv(
         critic_coeff=critic_coeff,
         entropy_coeff=entropy_coeff,
         max_grad_norm=max_grad_norm,
+        num_epochs=num_epochs,
+        num_minibatches=num_minibatches,
         generator=generator,
     )
 
@@ -121,6 +129,8 @@ def _ppo_train_step(
     critic_coeff: float,
     entropy_coeff: float,
     max_grad_norm: float,
+    num_epochs: int,
+    num_minibatches: int,
     generator: torch.Generator | None,
 ) -> dict[str, float]:
     # collect experience with current policy...
@@ -152,24 +162,45 @@ def _ppo_train_step(
         eligibility_rate=eligibility_rate,
         discount_rate=discount_rate,
     )
-    # update the policy on the collected experience...
-    loss, aux = ppo_loss_fn(
-        net=net,
-        transitions=rollouts.transitions,
-        advantages=advantages,
-        proximity_eps=proximity_eps,
-        critic_coeff=critic_coeff,
-        entropy_coeff=entropy_coeff,
-    )
-    optimiser.zero_grad()
-    loss.backward()
-    torch.nn.utils.clip_grad_norm_(net.parameters(), max_grad_norm)
-    optimiser.step()
-    # metrics
+    # update the policy on the collected experience: `num_epochs` passes over
+    # the B*T transitions, each split into `num_minibatches` random minibatches.
+    # With the defaults (1 epoch, 1 minibatch) this is a single gradient step
+    # on the whole batch, in which case the probability ratios are all exactly
+    # 1 and the PPO clipping never engages; with more epochs the later updates
+    # move away from the rollout policy and the clipping does its job.
+    flat_advantages = advantages.flatten()
+    num_transitions = flat_advantages.shape[0]
+    device = flat_advantages.device
+    loss_sum, aux_sums, num_updates = 0.0, {}, 0
+    for _ in range(num_epochs):
+        # (a single minibatch needs no shuffling; keeping the original order also
+        # keeps the default configuration numerically identical to one plain update)
+        if num_minibatches == 1:
+            perm = torch.arange(num_transitions, device=device)
+        else:
+            perm = torch.randperm(num_transitions, device=device)
+        for indices in perm.chunk(num_minibatches):
+            loss, aux = ppo_loss_fn(
+                net=net,
+                transitions=tree_map(lambda x: x[indices], flat_transitions),
+                advantages=flat_advantages[indices],
+                proximity_eps=proximity_eps,
+                critic_coeff=critic_coeff,
+                entropy_coeff=entropy_coeff,
+            )
+            optimiser.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(net.parameters(), max_grad_norm)
+            optimiser.step()
+            loss_sum += loss.item()
+            for k, v in aux.items():
+                aux_sums[k] = aux_sums.get(k, 0.0) + v
+            num_updates += 1
+    # metrics (averaged over the updates)
     train_metrics = {
-        "loss": loss.item(),
+        "loss": loss_sum / num_updates,
         "return": compute_return(rewards, discount_rate).mean().item(),
-        **aux,
+        **{k: v / num_updates for k, v in aux_sums.items()},
     }
     return train_metrics
 
@@ -180,18 +211,12 @@ def _ppo_train_step(
 
 def ppo_loss_fn(
     net: ActorCriticNetwork,
-    transitions: AnnotatedTransition,  # leading dims (B, num_steps)
-    advantages: Float[Tensor, "B num_steps"],
+    transitions: AnnotatedTransition,  # one leading (flat) batch dimension
+    advantages: Float[Tensor, "batch_size"],
     proximity_eps: float,
     critic_coeff: float,
     entropy_coeff: float,
 ) -> tuple[Float[Tensor, ""], dict[str, float]]:
-    # reshape the data to have one batch dimension
-    transitions = tree_map(
-        lambda x: x.flatten(start_dim=0, end_dim=1),
-        transitions,
-    )
-    advantages = advantages.flatten()
     batch_size = advantages.shape[0]
     batch = torch.arange(batch_size, device=advantages.device)
 
