@@ -183,12 +183,13 @@ ipython.run_line_magic("autoreload", "2")
 #     from google.colab import output
 #     output.enable_custom_widget_manager()  # for the live plotly training plots (LiveSubplots)
 
-# ===== AUDIT 2: CPU thread cap (5 lines added after device detection) ====================================
-# WHAT: if running on CPU with >4 torch threads, cap at 4.
-# WHY: each rollout is 64 sequential steps on tiny tensors; PyTorch's default of one thread per core
-# only adds fork/join overhead. Measured train_agent ms/step: 1 thread 66, 4 threads 50, 16 threads
-# 144, 48 threads 588 (B, thread table). No effect on GPU (measured 87 vs 85 ms at 4 vs 48 threads)
-# and a no-op on Colab (2 vCPUs); it only matters on many-core workstations. ORIGINAL: no cap.
+# ===== AUDIT 2: CPU thread cap (added after device detection) ============================================
+# WHAT: if running on CPU with more than 8 torch threads, cap at 8.
+# WHY: PyTorch defaults to one thread per core; with this workload (64 sequential env steps per
+# rollout) the synchronisation overhead outweighs parallelism beyond ~8 threads. Measured with the
+# final batch sizes on a 16-core box (procedural step, ms): 1 thr 2483, 2: 1643, 4: 1099, 8: 842,
+# 16: 1045; with the old tiny batches a 48-core box was 9x slower at the default than at 4 threads
+# (B, thread table). No effect on GPU; a no-op on Colab (2 vCPUs). Section 9. ORIGINAL: no cap.
 # ================================================================================================
 # ! CELL TYPE: code
 # ! FILTERS: []
@@ -231,11 +232,12 @@ from part6_goalmisgen.util import (
 
 device = t.device("cuda" if t.cuda.is_available() else "mps" if t.backends.mps.is_available() else "cpu")
 
-# On CPU, training is 64 sequential environment steps on tiny tensors per rollout, so PyTorch's
-# default of one thread per core only adds synchronisation overhead (a 48-core box trains ~9x
-# slower with the default than with 4 threads). This has no effect when running on a GPU.
-if device.type == "cpu" and t.get_num_threads() > 4:
-    t.set_num_threads(4)
+# On CPU, PyTorch's default of one thread per core hurts on big machines: the rollout loop is 64
+# sequential environment steps on small tensors, so beyond ~8 threads the synchronisation overhead
+# outweighs the parallelism (measured: 8 threads is fastest, 16 is ~30% slower, 48 is several
+# times slower). This has no effect when running on a GPU.
+if device.type == "cpu" and t.get_num_threads() > 8:
+    t.set_num_threads(8)
 
 # FILTERS: py
 MAIN = __name__ == "__main__"
@@ -1786,12 +1788,13 @@ Once we have a distribution of environments, we can integrate it into a reinforc
 # num_epochs=4, num_minibatches=4; now those are ppo.py defaults). Explicit hyperparameters removed
 # (num_env_steps, eligibility_rate, proximity_eps, critic_coeff, entropy_coeff=0.01, max_grad_norm).
 # Adam lr 0.001 -> 0.003. Default num_train_steps 512 -> 192.
-# WHY: per-step cost is launch-bound, so 512 envs cost ~1.3x of 32 envs while giving 16x the data
-# (section 1 timing table). Sweep 1 (32 configs): steps to 95% of optimum fall from 496 (128 envs,
-# 4x4, lr 1e-3) to 144 (512 envs, 4x4, lr 3e-3); 1024 envs needs fewer steps but costs more per
-# step; validated on 5 seeds: 512 envs / 192 steps = 24-25 s, all pass (section 4). The entropy
-# 0.01 the original passed explicitly is now the multi-env default in ppo.py (0.001 was tested and
-# collapses the policy on some seeds, B 'why net4 failed').
+# WHY: per-step cost is launch-bound on GPU, so 512 envs cost ~1.3x of 32 envs while giving 16x the
+# data (section 1 timing table). Sweep 1 (32 configs): steps to 95% of optimum fall from 496 (128
+# envs, 4x4, lr 1e-3) to 144 (512 envs, 4x4, lr 3e-3); 1024 envs needs fewer steps but costs more
+# per step; validated on 5 seeds: 512 envs / 192 steps = 24-25 s, all pass (section 4). On CPU a
+# smaller batch would save at most 30% at up to 2.4x the GPU cost, so one configuration is kept for
+# both devices (section 9). The entropy 0.01 the original passed explicitly is now the multi-env
+# default in ppo.py (0.001 was tested and collapses the policy on some seeds, B 'why net4 failed').
 # ================================================================================================
 # ! CELL TYPE: code
 # ! FILTERS: []
@@ -1830,8 +1833,7 @@ def train_agent_multienv(
 # ORIGINAL: '... a slightly larger policy network, and a longer training time.' and 'Colab users: Now
 # would be the time to switch over to a GPU or TPU runtime ... Expect the training to otherwise run
 # pretty slow on CPU only.' 'TPU' removed (the code only detects CUDA/MPS). Timing wording updated:
-# a minute or two on GPU, many minutes on CPU (CPU fallback measured ~3-4 min per procedural agent,
-# section 5).
+# a minute or two on GPU, many minutes on CPU (section 9).
 # ================================================================================================
 # ! CELL TYPE: markdown
 # ! FILTERS: []

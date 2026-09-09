@@ -399,3 +399,54 @@ python3 gen/core/main.py --chapters=2.6 --use_py=true
 Sweep/oracle/evaluation scripts (`oracle.py`, `evalh.py`, `sweep.py`, `launcher.py`, `summarise.py`,
 `compile_probe*.py`) lived in the session scratch directory and are not committed; the tables above
 are their output.
+
+## 9. CPU-only: is it feasible, and does batch size need to change for CPU?
+
+Measured on the idle 16-core box (ms per training step, eager rollouts; the compiled step gives
+only 74 -> 50 ms on the rollout part on CPU, and the update phase dominates there, so it is not
+used on CPU):
+
+| threads | fixed layout, 256 rollouts, 8x4 | procedural 512 envs, 4x4 | 256 envs | 128 envs |
+|---|---|---|---|---|
+| 1 | 960 | 2483 | 1230 | 628 |
+| 2 (Colab CPU has 2 vCPUs) | 593 | 1643 | 827 | 436 |
+| 4 | 494 | 1099 | 555 | 305 |
+| 8 | 396 | 842 | 432 | 244 |
+| 16 | 495 | 1045 | 548 | 326 |
+
+So on CPU the cost is compute-bound and roughly linear in batch, and 8 threads is the sweet spot
+(the notebook's CPU cap was raised from 4 to 8; 16 is ~30% slower than 8).
+
+Would a smaller batch help CPU? Steps to reach 95% of optimum across seeds (Sweep 8 + earlier):
+net4 at 128 envs 240-352 (budget 512), 256 envs 192-224 (budget 320), 512 envs 128-160 (budget 192).
+Implied wall per procedural agent:
+
+| envs / budget | GPU (A4000) | CPU 2 threads | CPU 8 threads |
+|---|---|---|---|
+| 512 / 192 | 25 s | 5.3 min | 2.7 min |
+| 256 / 320 | 39 s | 4.4 min | 2.3 min |
+| 128 / 512 | ~59 s | 3.7 min | 2.1 min |
+
+Smaller batches save at most 30% on CPU while costing up to 2.4x on GPU, because the extra steps
+eat most of the per-step saving. The fixed-layout agents are cheap on both devices (net2 at 64
+rollouts would save ~1 min of CPU time but one net1 seed then needs 160 steps). Decision: one
+configuration for both devices (the validated one); CPU differs only in the thread cap.
+
+Verdict: CPU-only is feasible as a fallback (see the measured end-to-end run below) but the
+procedural agents dominate and the GPU is roughly an order of magnitude faster overall.
+
+### Measured CPU-only end-to-end (whole notebook, eager rollouts, thread cap 8)
+
+| device | total | net1 | net2 | net3 (misgen check) | net4 |
+|---|---|---|---|---|---|
+| A4000 GPU | 96 s | 0.995 of farming optimum | 0.998 | 0.989 in-dist; env_shift bins 0%, proxy 0.98 | 0.971; env_shift bins 100%, proxy 0 |
+| CPU, 8 threads (16-core box) | 585 s (9.8 min) | 0.803, drop share 0.97 | 0.997 | 0.987; bins 0%, proxy 0.98 | 0.969; bins 100%, proxy 0 |
+| CPU, 2 threads (Colab vCPU count) | 1018 s (17 min) | 0.975 | 0.991 | 0.986; bins 0%, proxy 1.17 | 0.975; bins 100%, proxy 0 |
+
+(The two CPU runs ran concurrently on the same box, so each is slightly pessimistic. Colab's vCPUs
+are slower than this box's cores, so expect the 2-thread figure to be a lower bound there. The CPU
+RNG path differs from the GPU one, hence the different net1 ratios; all four agents pass on both.)
+
+Verdict: CPU-only works and demonstrates every behaviour, at 10-17 minutes for the notebook versus
+1.6 minutes on a GPU. The GPU is not required, but it is a 6-10x difference and almost all of it is
+the two procedural agents.

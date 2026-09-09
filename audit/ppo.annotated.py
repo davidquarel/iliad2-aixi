@@ -56,10 +56,12 @@ from part6_goalmisgen.potteryshop import (
 # eligibility 0.95, clip 0.1, critic 0.5, max_grad_norm 0.5.
 # WHY: (1) one update per batch is what kept net1 at 28% and net2 at 24% of optimum; 8 epochs of 4
 # minibatches + lr 3e-3 (set in the notebook's optimiser) gives 99% (Sweep 2). (2) Batch 256: per
-# step cost is launch-bound (16 rollouts 68 ms vs 256 rollouts 75 ms eager), so a big batch is nearly
-# free (section 1). (3) Entropy 0.03: with 0.001-0.01 about one seed in four stops at three of four
-# piles and never explores to the fourth (Sweeps 4b, 5); 0.03 passed 8/8 seeds, 0.1 is too noisy,
-# annealing was no better (Sweeps 6, 7). net1 still farms at 95-97% of optimum at 0.03 (Sweep 7).
+# step cost is launch-bound on GPU (16 rollouts 68 ms vs 256 rollouts 75 ms eager), so a big batch
+# is nearly free (section 1); 64 rollouts was tested (Sweeps 8, 9): cheaper per step but one net1
+# seed then needs 160 steps, so no net gain. (3) Entropy 0.03: with 0.001-0.01 about one seed in four
+# stops at three of four piles and never explores to the fourth (Sweeps 4b, 5); 0.03 passed 8/8
+# seeds, 0.1 is too noisy, annealing was no better (Sweeps 6, 7). net1 still farms at 95-97% of
+# optimum at 0.03 (Sweep 7).
 # NOTE: the notebook's train_agent passes none of these, so students see a 6-argument call.
 # ================================================================================================
 def ppo_train_step(
@@ -304,9 +306,10 @@ def _ppo_train_step(
 # are overwritten by the next replay), and seeds the device RNG from the caller's generator once per
 # rollout. On CPU, or on any exception, it falls back to the eager collect_annotated_rollout for the
 # rest of the process and prints one line.
-# WHY: rollout collection dominated the train step (64 sequential steps of tiny kernels). Measured
-# per 64-step rollout: eager 97 ms (128 envs) / 250 ms (512, shared GPU); compiled 15 / 17 ms
-# (section 3). Full train step at 512 envs 4x4: 247 -> 130 ms.
+# WHY: rollout collection dominated the train step on GPU (64 sequential steps of tiny kernels).
+# Measured per 64-step rollout: eager 97 ms (128 envs) / 250 ms (512, shared GPU); compiled 15 / 17
+# ms (section 3). Full train step at 512 envs 4x4: 247 -> 130 ms. On CPU the update phase dominates
+# and compiling the step only gives 74 -> 50 ms on the rollout part, so it is not used there.
 # VERIFIED: compiled env.step bit-identical to eager over 64 random steps; same generator seed ->
 # identical actions; stored obs/logits/values match env.observe/net; learning progress identical to
 # eager (ratio 0.920 vs 0.922 after 109 steps); two end-to-end runs bit-identical (sections 3, 5).

@@ -209,11 +209,12 @@ from part6_goalmisgen.util import (
 
 device = t.device("cuda" if t.cuda.is_available() else "mps" if t.backends.mps.is_available() else "cpu")
 
-# On CPU, training is 64 sequential environment steps on tiny tensors per rollout, so PyTorch's
-# default of one thread per core only adds synchronisation overhead (a 48-core box trains ~9x
-# slower with the default than with 4 threads). This has no effect when running on a GPU.
-if device.type == "cpu" and t.get_num_threads() > 4:
-    t.set_num_threads(4)
+# On CPU, PyTorch's default of one thread per core hurts on big machines: the rollout loop is 64
+# sequential environment steps on small tensors, so beyond ~8 threads the synchronisation overhead
+# outweighs the parallelism (measured: 8 threads is fastest, 16 is ~30% slower, 48 is several
+# times slower). This has no effect when running on a GPU.
+if device.type == "cpu" and t.get_num_threads() > 8:
+    t.set_num_threads(8)
 
 # FILTERS: py
 MAIN = __name__ == "__main__"
