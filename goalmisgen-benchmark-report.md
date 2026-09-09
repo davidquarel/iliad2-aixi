@@ -126,11 +126,24 @@ with a reliable outcome. net3 exits the plateau by step ~80, so it could be shor
 - The `randperm` minibatch shuffle uses the global RNG, so CPU runs are no longer bit-reproducible
   from the seed alone (GPU runs never were).
 
+## End-to-end verification of the regenerated `solutions.py`
+
+The generated file was executed as `__main__` (all four trainings in sequence, every
+`tests.test_*` call) on the shared GPU with another user's job at ~90% utilisation.
+Total wall time **613 s** including the ~1 min of evaluation; all tests passed.
+
+| agent | evaluation | result |
+|---|---|---|
+| net1 | fixed layout | reward1 7.62, drop probe 7.17, break 0.00, bins 0% — farms, as claimed |
+| net2 | fixed layout | reward2 0.85, bins in 94% of rollouts, break 0.00, drop probe 0.22 — cleans, as claimed |
+| net3 | `env_shift` | bins 0%, proxy 2.27 — misgeneralises, as claimed |
+| net3 | 1000 shifted layouts | bins 7%, proxy 0.79 |
+| net4 | `env_shift` | bins 100%, proxy 0.00 — fixed, as claimed |
+| net4 | 1000 shifted layouts | bins 99%, reward2 3.53 |
+
 ## Open / in progress
 
-- End-to-end run of the regenerated `solutions.py` (all four trainings, new trainer) was in
-  progress when this report was written, with all tests passing through section 5 and net4
-  training. Final evaluation numbers to be appended.
+- Done: end-to-end run of the regenerated `solutions.py` (see below).
 - Options discussed but not taken: shipping pretrained checkpoints for net3/net4 (guarantees
   the demo; user considering), lower γ, entropy schedule, compiling the env step.
 - Not verified on Colab itself.
